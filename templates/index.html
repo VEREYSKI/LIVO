@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}LIVO — твой мир развлечений{% endblock %}
+{% block content %}
+<section class="hero hero-cover">
+  <img class="livo-cover" src="{{ url_for('static', filename='livo_cover.png') }}" alt="LIVO — обложка">
+  <div class="badge">LIVO • YOUR ENTERTAINMENT HUB</div>
+  <h1>LIVO — твой мир<br>развлечений</h1>
+  <p>Фильмы, игры, занятия, тренировки и челленджи. <strong>Выбирай. Играй. Живи.</strong></p>
+  <form class="search" action="{{ url_for('movies') }}" method="get">
+    <input name="q" placeholder="🔍  Что ты хочешь найти?">
+    <button type="submit">⌕</button>
+  </form>
+</section>
+<div class="grid">
+  <a class="card" href="{{ url_for('movies') }}"><b>🎬 Фильмы и сериалы</b><span>Найди, что посмотреть сегодня</span></a>
+  <a class="card" href="{{ url_for('games') }}"><b>🎮 Игры</b><span>Популярные игры и новинки</span></a>
+  <a class="card" href="{{ url_for('bored') }}"><b>🎲 Мне скучно</b><span>Получить случайную идею</span></a>
+  <a class="card" href="{{ url_for('places') }}"><b>📍 Куда пойти</b><span>Идеи для свободного времени</span></a>
+  <a class="card" href="{{ url_for('challenges') }}"><b>🏆 Челленджи</b><span>Испытай себя</span></a>
+  <a class="card" href="{{ url_for('fitness') }}"><b>🏋️ Фитнес</b><span>Собери свою тренировку</span></a>
+</div>
+<div class="section-title"><h2>🔥 Фильмы 2000–2026</h2><a href="{{ url_for('movies') }}">Весь каталог →</a></div>
+<div class="movie-grid">
+{% for movie in movies[:8] %}
+  <div class="card poster"><div class="poster-content"><b>{{ movie.title }}</b><span>{{ movie.year }} · {{ movie.genre }}</span><small class="rating">{{ movie.year }}</small></div></div>
+{% endfor %}
+</div>
+<div class="section-title"><h2>🎮 Популярные игры</h2><a href="{{ url_for('games') }}">Все игры →</a></div>
+<div class="movie-grid">
+  <div class="card poster"><div class="poster-content"><b>Minecraft</b><span>PC · Console · Mobile</span><small class="rating">★ 9.2</small></div></div>
+  <div class="card poster"><div class="poster-content"><b>GTA V</b><span>PC · PS · Xbox</span><small class="rating">★ 9.4</small></div></div>
+  <div class="card poster"><div class="poster-content"><b>Cyberpunk 2077</b><span>PC · PS · Xbox</span><small class="rating">★ 8.8</small></div></div>
+  <div class="card poster"><div class="poster-content"><b>Elden Ring</b><span>PC · PS · Xbox</span><small class="rating">★ 9.5</small></div></div>
+</div>
+<div class="premium-bar">
+  <div><b>✨ Открой для себя больше</b><br><span class="note">Подборки, челленджи и идеи для каждого дня.</span></div>
+  <a href="{{ url_for('about') }}"><button>Узнать больше</button></a>
+</div>
+{% endblock %}

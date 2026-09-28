@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}LIVO{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="header">
+  <a class="logo" href="{{ url_for('index') }}">LIVO</a>
+  <nav>
+    <a href="{{ url_for('movies') }}">🎬 Фильмы</a>
+    <a href="{{ url_for('games') }}">🎮 Игры</a>
+    <a href="{{ url_for('fitness') }}">🏋️ Фитнес</a>
+    <a href="{{ url_for('challenges') }}">🔥 Челленджи</a>
+    <a href="{{ url_for('pc_builder') }}">🖥️ ПК</a>
+    <a href="{{ url_for('recipes') }}">🍳 Рецепты</a>
+  </nav>
+</header>
+
+<main class="container">
+  {% block content %}{% endblock %}
+</main>
+
+<footer>
+  <a href="{{ url_for('about') }}">📖 О сайте</a>
+  <a href="{{ url_for('privacy') }}">🔒 Конфиденциальность</a>
+  <a href="{{ url_for('policy') }}">📜 Политика</a>
+  <a href="{{ url_for('social') }}">📱 Социальные сети</a>
+  <a href="{{ url_for('support') }}">🛟 Поддержка</a>
+  <div class="footer-socials" aria-label="Контакты LIVO">
+    <a href="https://www.instagram.com/livo.lif?stkn=MW84dXJpYzF6czljdA==" target="_blank" rel="noopener"><img src="{{ url_for('static', filename='icons/instagram.svg') }}" alt="Instagram"><span>Instagram</span></a>
+    <a href="https://www.youtube.com/@Livolif" target="_blank" rel="noopener"><img src="{{ url_for('static', filename='icons/youtube.svg') }}" alt="YouTube"><span>YouTube</span></a>
+    <a href="{{ url_for('support') }}"><img src="{{ url_for('static', filename='icons/phone.svg') }}" alt="Телефон"><span>Телефон</span></a>
+  </div>
+  <div class="footer-meta">
+    <span>Сайт создаётся с 3 августа 2026 года</span>
+    <span>© 2026 LIVO. Все права защищены.</span>
+    <span>ООО «ЛивоЛайф» · Amsterdam, Нидерланды</span><span>Поддержка: <a href="mailto:n90595548@gmail.com">n90595548@gmail.com</a> · <a href="tel:+447705810630">+44 7705 810630</a></span>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Челленджи — LIVO{% endblock %}
+{% block content %}
+<section class="challenge-hero">
+  <span class="badge">RANDOM CHALLENGE</span>
+  <h1>🔥 Челленджи LIVO</h1>
+  <p>Нажми на кубик — и LIVO случайно выберет тебе челлендж. Никакого выбора, только действие.</p>
+</section>
+
+<div class="chips">
+  <a class="chip {% if category == 'all' %}active{% endif %}" href="{{ url_for('challenges') }}">Все</a>
+  {% for cat in ['Пресс', 'Ноги', 'Кардио', 'Активность', 'Привычка', 'Гибкость', 'Фитнес'] %}
+  <a class="chip {% if category == cat %}active{% endif %}" href="{{ url_for('challenges', category=cat) }}">{{ cat }}</a>
+  {% endfor %}
+</div>
+
+<section class="dice-zone" aria-label="Случайный челлендж">
+  <button class="dice-button" id="diceButton" type="button" aria-label="Получить случайный челлендж">
+    <span class="dice">⚄</span>
+  </button>
+  <div class="dice-copy">
+    <h2>Твой случайный челлендж</h2>
+    <p>Нажми на кубик, чтобы получить случайное задание{% if category != "all" %} из категории «{{ category }}»{% endif %}.</p>
+  </div>
+</section>
+
+<section id="challengeResult" class="random-challenge" aria-live="polite" hidden>
+  <div class="random-challenge-top">
+    <span class="result-label">ТЕБЕ ВЫПАЛО</span>
+    <span id="resultCategory" class="result-category"></span>
+  </div>
+  <h2 id="resultTitle"></h2>
+  <div class="result-meta">
+    <span id="resultDuration"></span>
+    <span id="resultLevel"></span>
+  </div>
+  <p id="resultDescription"></p>
+  <button id="rerollButton" class="reroll-button" type="button">🎲 Бросить ещё раз</button>
+</section>
+
+<script>
+const challenges = {{ challenges | tojson }};
+const selectedCategory = {{ category | tojson }};
+const diceButton = document.getElementById('diceButton');
+const rerollButton = document.getElementById('rerollButton');
+const result = document.getElementById('challengeResult');
+
+let lastIndex = -1;
+
+function randomChallenge() {
+  if (!challenges.length) {
+    result.hidden = false;
+    document.getElementById('resultTitle').textContent = 'В этой категории пока нет челленджей';
+    document.getElementById('resultDescription').textContent = 'Выбери другую категорию или нажми «Все».';
+    document.getElementById('resultDuration').textContent = '';
+    document.getElementById('resultLevel').textContent = '';
+    document.getElementById('resultCategory').textContent = selectedCategory === 'all' ? '' : selectedCategory;
+    return;
+  }
+
+  let index = Math.floor(Math.random() * challenges.length);
+  if (challenges.length > 1 && index === lastIndex) {
+    index = (index + 1 + Math.floor(Math.random() * (challenges.length - 1))) % challenges.length;
+  }
+  lastIndex = index;
+
+  const c = challenges[index];
+  document.getElementById('resultTitle').textContent = c[0];
+  document.getElementById('resultDuration').textContent = '⏱ ' + c[1];
+  document.getElementById('resultCategory').textContent = c[2];
+  document.getElementById('resultDescription').textContent = c[3];
+  document.getElementById('resultLevel').textContent = 'Уровень: ' + c[4];
+
+  result.hidden = false;
+  result.classList.remove('challenge-pop');
+  void result.offsetWidth;
+  result.classList.add('challenge-pop');
+
+  diceButton.classList.remove('dice-roll');
+  void diceButton.offsetWidth;
+  diceButton.classList.add('dice-roll');
+}
+
+diceButton.addEventListener('click', randomChallenge);
+rerollButton.addEventListener('click', randomChallenge);
+</script>
+{% endblock %}

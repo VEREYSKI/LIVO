@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Социальные сети — LIVO{% endblock %}
+{% block content %}
+<section class="social-page">
+  <h1>📱 Социальные сети и контакты</h1>
+  <p>Следи за LIVO и связывайся с поддержкой удобным способом.</p>
+  <div class="social-grid">
+    <a class="social-card" href="https://www.instagram.com/livo.lif?stkn=MW84dXJpYzF6czljdA==" target="_blank" rel="noopener">
+      <img src="{{ url_for('static', filename='icons/instagram.svg') }}" alt="Instagram">
+      <div><b>Instagram</b><span>@livo.lif ↗</span></div>
+    </a>
+    <a class="social-card" href="https://www.youtube.com/@Livolif" target="_blank" rel="noopener">
+      <img src="{{ url_for('static', filename='icons/youtube.svg') }}" alt="YouTube">
+      <div><b>YouTube</b><span>@Livolif ↗</span></div>
+    </a>
+    <div class="social-card contact-card">
+      <img src="{{ url_for('static', filename='icons/phone.svg') }}" alt="Телефон">
+      <div><b>Телефон</b><span>Номер поддержки будет добавлен</span></div>
+    </div>
+    <a class="social-card" href="mailto:n90595548@gmail.com">
+      <img src="{{ url_for('static', filename='icons/email.svg') }}" alt="Email">
+      <div><b>Поддержка</b><span>n90595548@gmail.com</span></div>
+    </a>
+  </div>
+</section>
+{% endblock %}

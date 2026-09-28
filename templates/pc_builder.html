@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Сборка ПК — LIVO{% endblock %}
+{% block content %}
+<h1>🖥️ Сборка ПК</h1>
+<p>Собери конфигурацию, выбери видеокарту и посмотри ориентировочный FPS в популярных играх.</p>
+
+<form class="form" method="get" action="{{ url_for('pc_builder') }}">
+  <label>CPU
+    <select name="cpu">{% for x in parts.cpu %}<option>{{ x }}</option>{% endfor %}</select>
+  </label>
+  <label>GPU
+    <select name="gpu">
+      {% for x in parts.gpu %}
+      <option value="{{ x|replace('NVIDIA GeForce ','')|replace(' 8GB','')|replace(' 12GB','')|replace(' 16GB','')|replace(' 24GB','') }}" {% if gpu in x %}selected{% endif %}>{{ x }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>ОЗУ
+    <select name="ram">{% for x in parts.ram %}<option>{{ x }}</option>{% endfor %}</select>
+  </label>
+  <label>SSD/HDD
+    <select name="storage">{% for x in parts.storage %}<option>{{ x }}</option>{% endfor %}</select>
+  </label>
+  <label>Блок питания
+    <select name="psu">{% for x in parts.psu %}<option>{{ x }}</option>{% endfor %}</select>
+  </label>
+  <label>Охлаждение
+    <select name="cooler">{% for x in parts.cooler %}<option>{{ x }}</option>{% endfor %}</select>
+  </label>
+  <label>Материнская плата
+    <select name="motherboard">{% for x in parts.motherboard %}<option>{{ x }}</option>{% endfor %}</select>
+  </label>
+  <label>Корпус
+    <select name="case">{% for x in parts.case %}<option>{{ x }}</option>{% endfor %}</select>
+  </label>
+  <label>Разрешение
+    <select name="resolution">
+      <option value="1080p" {% if resolution=="1080p" %}selected{% endif %}>1920×1080 — Full HD</option>
+      <option value="1440p" {% if resolution=="1440p" %}selected{% endif %}>2560×1440 — QHD</option>
+      <option value="4K" {% if resolution=="4K" %}selected{% endif %}>3840×2160 — 4K</option>
+    </select>
+  </label>
+  <button type="submit">Рассчитать FPS</button>
+</form>
+
+<div class="result">
+  <h2>🎮 Ориентировочный FPS — {{ gpu }} · {{ resolution }}</h2>
+  <p>Значения ниже являются оценками. Реальный FPS зависит от настроек графики, драйверов, версии игры, DLSS/FSR, трассировки лучей и конкретной сборки.</p>
+</div>
+
+<div class="grid">
+{% for game, value in games.items() %}
+  <article class="card">
+    <b>🎮 {{ game }}</b>
+    <span>{{ value }} FPS</span>
+    <small>{{ resolution }}</small>
+  </article>
+{% endfor %}
+</div>
+
+<div class="section-title"><h2>🧩 Все комплектующие</h2></div>
+<div class="grid">
+  <article class="card"><b>CPU</b><small>{{ parts.cpu|length }} вариантов</small></article>
+  <article class="card"><b>GPU</b><small>{{ parts.gpu|length }} вариантов</small></article>
+  <article class="card"><b>RAM</b><small>{{ parts.ram|length }} вариантов</small></article>
+  <article class="card"><b>Накопители</b><small>{{ parts.storage|length }} вариантов</small></article>
+  <article class="card"><b>PSU</b><small>{{ parts.psu|length }} вариантов</small></article>
+  <article class="card"><b>Охлаждение</b><small>{{ parts.cooler|length }} вариантов</small></article>
+  <article class="card"><b>Материнские платы</b><small>{{ parts.motherboard|length }} вариантов</small></article>
+  <article class="card"><b>Корпуса</b><small>{{ parts.case|length }} вариантов</small></article>
+</div>
+
+<div class="result">
+  <h2>⚠️ Важно</h2>
+  <p>Перед покупкой нужно проверить совместимость CPU с сокетом материнской платы, тип и скорость RAM, длину видеокарты, размеры кулера, разъёмы питания и достаточную мощность PSU. FPS нельзя гарантировать по одной спецификации.</p>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Мне скучно — LIVO{% endblock %}
+{% block content %}
+<h1>🎲 Мне скучно</h1>
+<p>Нажми кнопку и получи случайную идею.</p>
+<div class="random-box">
+  <div id="idea">Нажми «Придумай»</div>
+  <button onclick="newIdea()">Придумай</button>
+</div>
+<script>
+const ideas = {{ activities|tojson }};
+function newIdea(){ document.getElementById('idea').textContent = ideas[Math.floor(Math.random()*ideas.length)]; }
+</script>
+{% endblock %}

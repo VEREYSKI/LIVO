@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Поддержка — LIVO{% endblock %}
+{% block content %}
+<section class="info-page support-page">
+  <h1>🛟 Поддержка LIVO</h1>
+  <p>Если вы нашли ошибку, хотите предложить улучшение или нужна помощь с сайтом — свяжитесь с LIVO.</p>
+
+  <h2>✉️ Электронная почта</h2>
+  <p><a class="support-email" href="mailto:n90595548@gmail.com">n90595548@gmail.com</a></p>
+
+  <h2>📞 Телефон</h2>
+  <p><a href="tel:+447705810630">+44 7705 810630</a></p>
+
+  <h2>🏢 Владелец</h2>
+  <p>ООО «ЛивоЛайф»<br>Nieuwezijds Voorburgwal 296-298<br>Amsterdam 1012 RT, Нидерланды</p>
+  <p>Регистрационный номер, предоставленный владельцем: 088 585 15 85</p>
+
+  <h2>📱 Социальные сети</h2>
+  <p><a href="{{ url_for('social') }}">Открыть страницу социальных сетей →</a></p>
+</section>
+{% endblock %}

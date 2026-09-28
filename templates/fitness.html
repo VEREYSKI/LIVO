@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Фитнес — LIVO{% endblock %}
+{% block content %}
+<h1>🏋️ Фитнес LIVO</h1>
+<p>Выбери цель, уровень, мышцы и оборудование. Фильтры внутри одной группы объединяются через «ИЛИ», а между группами — через «И».</p>
+
+<form class="form" method="get" action="{{ url_for('fitness') }}">
+  <label>🎯 Цель
+    <select name="goal">
+      <option value="muscle" {% if goal=="muscle" %}selected{% endif %}>Набор мышц</option>
+      <option value="strength" {% if goal=="strength" %}selected{% endif %}>Сила</option>
+      <option value="fatloss" {% if goal=="fatloss" %}selected{% endif %}>Снижение веса</option>
+      <option value="fitness" {% if goal=="fitness" %}selected{% endif %}>Общая форма</option>
+      <option value="endurance" {% if goal=="endurance" %}selected{% endif %}>Выносливость</option>
+    </select>
+  </label>
+  <label>📈 Уровень
+    <select name="level">
+      <option value="beginner" {% if level=="beginner" %}selected{% endif %}>Новичок</option>
+      <option value="intermediate" {% if level=="intermediate" %}selected{% endif %}>Средний</option>
+      <option value="advanced" {% if level=="advanced" %}selected{% endif %}>Продвинутый</option>
+    </select>
+  </label>
+
+  <fieldset class="filter-group">
+    <legend>💪 Мышцы — можно выбрать несколько</legend>
+    <div class="filter-options">
+      {% for muscle in muscles %}
+      <label class="check-option">
+        <input type="checkbox" name="muscle" value="{{ muscle }}" {% if muscle in selected_muscles %}checked{% endif %}>
+        <span>{{ muscle }}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </fieldset>
+
+  <fieldset class="filter-group">
+    <legend>🏋️ Оборудование — можно выбрать несколько</legend>
+    <div class="filter-options">
+      {% for item in equipment %}
+      <label class="check-option">
+        <input type="checkbox" name="equipment" value="{{ item }}" {% if item in selected_equipment %}checked{% endif %}>
+        <span>{{ item }}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </fieldset>
+
+  <div class="filter-actions">
+    <button type="submit">Составить подборку</button>
+    <a class="button secondary" href="{{ url_for('fitness') }}">Сбросить фильтры</a>
+  </div>
+</form>
+
+<div class="section-title">
+  <h2>🔥 Упражнения и тренажёры</h2>
+  <span class="filter-count">{{ result_count }} найдено</span>
+</div>
+<div class="grid" id="fitnessGrid">
+{% for e in exercises %}
+  <article class="card exercise-card">
+    <b>{{ e.name }}</b>
+    <span>Мышцы: {{ e.muscles }}</span>
+    <small>🏋️ {{ e.equipment }}</small>
+    <small>{{ e.detail }}</small>
+  </article>
+{% else %}
+  <div class="result empty-result">
+    <h3>Ничего не найдено</h3>
+    <p>Попробуй убрать один из фильтров или выбрать другое оборудование.</p>
+    <a class="button secondary" href="{{ url_for('fitness') }}">Сбросить фильтры</a>
+  </div>
+{% endfor %}
+</div>
+
+<div class="result">
+  <h2>💡 Важно</h2>
+  <p>Количество подходов и повторений — ориентир, а не персональное медицинское назначение. Начинай с комфортного веса, следи за техникой и постепенно увеличивай нагрузку. Если есть травмы или ограничения по здоровью, согласуй программу со специалистом.</p>
+</div>
+
+{% endblock %}
