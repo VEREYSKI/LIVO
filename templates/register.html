@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Регистрация — LIVO{% endblock %}
+{% block content %}
+<section class="auth-page">
+  <div class="auth-card">
+    <div class="badge">LIVO • БЕСПЛАТНО</div>
+    <h1>Создать аккаунт</h1>
+    <p class="muted">Регистрация бесплатна. Аккаунт нужен, чтобы сохранять профиль и будущий прогресс LIVO.</p>
+    <form method="post" class="auth-form" novalidate>
+      <label>Имя<input name="name" maxlength="60" autocomplete="name" required placeholder="Ваше имя"></label>
+      <label>Email<input type="email" name="email" autocomplete="email" required placeholder="you@example.com"></label>
+      <label>Возраст<input type="number" name="age" min="16" max="120" required placeholder="16"></label>
+      <label>Пароль<input type="password" name="password" minlength="8" autocomplete="new-password" required placeholder="Минимум 8 символов"></label>
+      <label>Повторите пароль<input type="password" name="password2" minlength="8" autocomplete="new-password" required></label>
+      <label class="check-option"><input type="checkbox" name="privacy" required> Я согласен с <a href="{{ url_for('privacy') }}">политикой конфиденциальности</a>.</label>
+      <button class="primary-button" type="submit">Создать бесплатный аккаунт</button>
+    </form>
+    <p class="auth-switch">Уже есть аккаунт? <a href="{{ url_for('login') }}">Войти</a></p>
+  </div>
+</section>
+{% endblock %}

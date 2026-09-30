@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Вход — LIVO{% endblock %}
+{% block content %}
+<section class="auth-page">
+  <div class="auth-card">
+    <div class="badge">LIVO • ВХОД</div>
+    <h1>С возвращением</h1>
+    <p class="muted">Войдите бесплатно, чтобы продолжить работу с LIVO.</p>
+    <form method="post" class="auth-form">
+      <label>Email<input type="email" name="email" autocomplete="email" required placeholder="you@example.com"></label>
+      <label>Пароль<input type="password" name="password" autocomplete="current-password" required></label>
+      <button class="primary-button" type="submit">Войти</button>
+    </form>
+    <p class="auth-switch">Нет аккаунта? <a href="{{ url_for('register') }}">Создать бесплатно</a></p>
+  </div>
+</section>
+{% endblock %}

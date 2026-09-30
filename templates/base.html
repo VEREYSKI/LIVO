@@ -16,10 +16,23 @@
     <a href="{{ url_for('challenges') }}">🔥 Челленджи</a>
     <a href="{{ url_for('pc_builder') }}">🖥️ ПК</a>
     <a href="{{ url_for('recipes') }}">🍳 Рецепты</a>
+    <a href="{{ url_for('social') }}">📱 Соцсети</a>
   </nav>
+  <div class="auth-nav">
+    {% if current_user %}
+      <a class="auth-user" href="{{ url_for('profile') }}">👤 {{ current_user['name'] }}</a>
+      <a class="auth-link" href="{{ url_for('logout') }}">Выйти</a>
+    {% else %}
+      <a class="auth-link" href="{{ url_for('login') }}">Войти</a>
+      <a class="auth-cta" href="{{ url_for('register') }}">Создать аккаунт бесплатно</a>
+    {% endif %}
+  </div>
 </header>
 
 <main class="container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}<div class="flash-stack">{% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+  {% endwith %}
   {% block content %}{% endblock %}
 </main>
 
@@ -27,13 +40,7 @@
   <a href="{{ url_for('about') }}">📖 О сайте</a>
   <a href="{{ url_for('privacy') }}">🔒 Конфиденциальность</a>
   <a href="{{ url_for('policy') }}">📜 Политика</a>
-  <a href="{{ url_for('social') }}">📱 Социальные сети</a>
   <a href="{{ url_for('support') }}">🛟 Поддержка</a>
-  <div class="footer-socials" aria-label="Контакты LIVO">
-    <a href="https://www.instagram.com/livo.lif?stkn=MW84dXJpYzF6czljdA==" target="_blank" rel="noopener"><img src="{{ url_for('static', filename='icons/instagram.svg') }}" alt="Instagram"><span>Instagram</span></a>
-    <a href="https://www.youtube.com/@Livolif" target="_blank" rel="noopener"><img src="{{ url_for('static', filename='icons/youtube.svg') }}" alt="YouTube"><span>YouTube</span></a>
-    <a href="{{ url_for('support') }}"><img src="{{ url_for('static', filename='icons/phone.svg') }}" alt="Телефон"><span>Телефон</span></a>
-  </div>
   <div class="footer-meta">
     <span>Сайт создаётся с 3 августа 2026 года</span>
     <span>© 2026 LIVO. Все права защищены.</span>

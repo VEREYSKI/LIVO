@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Профиль — LIVO{% endblock %}
+{% block content %}
+<section class="profile-page">
+  <div class="profile-card">
+    <div class="profile-avatar">{{ user['name'][0]|upper }}</div>
+    <div>
+      <div class="badge">LIVO • ПРОФИЛЬ</div>
+      <h1>{{ user['name'] }}</h1>
+      <p class="muted">{{ user['email'] }}</p>
+    </div>
+  </div>
+  <div class="profile-grid">
+    <div class="card"><b>🎂 Возраст</b><span>{{ user['age'] }}</span></div>
+    <div class="card"><b>✨ Статус</b><span>Бесплатный аккаунт</span></div>
+  </div>
+  <div class="profile-actions">
+    <a class="button" href="{{ url_for('index') }}">← На главную</a>
+    <a class="button secondary" href="{{ url_for('logout') }}">Выйти</a>
+  </div>
+</section>
+{% endblock %}

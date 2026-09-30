@@ -2,31 +2,19 @@
 {% block title %}Фильмы — LIVO{% endblock %}
 {% block content %}
 <h1>🎬 Фильмы</h1>
-<p>Каталог фильмов LIVO за <strong>2000–2026</strong>. Ищи по названию, жанру или году.</p>
-<form class="search" onsubmit="return false;">
-  <input id="movieSearch" placeholder="🔍 Например: Batman, фантастика, 2019...">
-  <button type="button" onclick="filterMovies()">⌕</button>
+<p>Каталог фильмов LIVO за <strong>2000–2026</strong>. Все карточки используют локальные изображения и не зависят от внешнего постер-сервиса.</p>
+<form class="search" method="get" action="{{ url_for('movies') }}">
+  <input name="q" value="{{ request.args.get('q','') }}" placeholder="🔍 Например: Batman, фантастика, 2019...">
+  <button type="submit">⌕</button>
 </form>
 <div class="section-title"><h2 id="count">Фильмов: {{ movies|length }}</h2><span class="note">2000–2026</span></div>
 <div class="grid poster-grid" id="movieGrid">
 {% for movie in movies %}
 <div class="card movie-card poster-card" data-search="{{ movie.title|lower }} {{ movie.genre|lower }} {{ movie.year }}">
-  {% if movie.poster %}<img class="poster-image" src="{{ movie.poster }}" alt="Обложка {{ movie.title }}" loading="lazy">{% else %}<div class="poster-placeholder">🎬</div>{% endif %}
+  <img class="poster-image" src="{{ movie.poster }}" alt="Постер {{ movie.title }}" loading="lazy">
   <b>{{ movie.title }}</b><span>{{ movie.genre }} · {{ movie.year }}</span><small class="rating">{{ movie.year }} · ★ {{ movie.rating }}</small>
 </div>
 {% endfor %}
 </div>
-<p class="note">Постеры отключены, чтобы карточки отображались стабильно без битых изображений.</p>
-<script>
-function filterMovies(){
-  const q=document.getElementById('movieSearch').value.toLowerCase().trim();
-  let n=0;
-  document.querySelectorAll('.movie-card').forEach(card=>{
-    const ok=card.dataset.search.includes(q);
-    card.style.display=ok?'flex':'none'; if(ok)n++;
-  });
-  document.getElementById('count').textContent='Найдено: '+n;
-}
-document.getElementById('movieSearch').addEventListener('input',filterMovies);
-</script>
+{% if not movies %}<div class="result"><h2>Ничего не найдено</h2><p>Попробуй другое название, жанр или год.</p></div>{% endif %}
 {% endblock %}
