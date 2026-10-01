@@ -82,8 +82,3 @@ footer{display:flex;justify-content:center;flex-wrap:wrap;gap:9px 22px;padding:2
 .filter-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
 .button.secondary { display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
 .filter-count{color:var(--muted);font-size:13px}.empty-result{grid-column:1/-1}.filter-group{background:rgba(8,10,18,.35)}
-
-
-/* Social contacts and support */
-.social-page{max-width:980px;margin:0 auto}.social-page>p{max-width:700px}.social-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin-top:24px}.social-card{min-height:120px;display:flex;align-items:center;gap:18px;padding:22px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(145deg,rgba(18,20,34,.92),rgba(8,9,15,.96));text-decoration:none;transition:.2s}.social-card:hover{transform:translateY(-3px);border-color:rgba(139,92,246,.58)}.social-card img{width:52px;height:52px;flex:0 0 52px}.social-card div{display:grid;gap:6px}.social-card b{font-size:18px}.social-card span{color:var(--muted);font-size:13px;line-height:1.45}.contact-card{cursor:default}.contact-card:hover{transform:none}.support-email{display:inline-flex;margin:8px 0 20px;padding:13px 17px;border-radius:12px;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);text-decoration:none;color:#ddd0ff;font-weight:700}.footer-meta{width:100%;display:flex;justify-content:center;flex-wrap:wrap;gap:8px 20px;padding-top:14px;color:#626779;font-size:11px;text-align:center}
-@media(max-width:650px){.social-grid{grid-template-columns:1fr}.social-card{min-height:100px}.footer-meta{justify-content:flex-start;text-align:left}}

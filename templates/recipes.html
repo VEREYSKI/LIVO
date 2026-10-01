@@ -2,43 +2,48 @@
 {% block title %}Книга рецептов — LIVO{% endblock %}
 {% block content %}
 <h1>🍳 Книга рецептов LIVO</h1>
-<p>Подробные рецепты: продукты с количеством, порции, время, шаги и ориентировочная стоимость.</p>
+<p>От быстрых блюд из нескольких ингредиентов до необычных домашних экспериментов.</p>
+
 <form class="form" method="get" action="{{ url_for('recipes') }}">
   <label>Категория
     <select name="category">
       <option value="all">Все</option>
-      {% for cat in ['Завтрак','Обед','Ужин','Перекус','Десерт','Суп','Гарнир','Салат'] %}
-      <option value="{{ cat }}" {% if category==cat %}selected{% endif %}>{{ cat }}</option>
-      {% endfor %}
+      <option value="Завтрак" {% if category=="Завтрак" %}selected{% endif %}>Завтрак</option>
+      <option value="Обед" {% if category=="Обед" %}selected{% endif %}>Обед</option>
+      <option value="Ужин" {% if category=="Ужин" %}selected{% endif %}>Ужин</option>
+      <option value="Перекус" {% if category=="Перекус" %}selected{% endif %}>Перекус</option>
+      <option value="Десерт" {% if category=="Десерт" %}selected{% endif %}>Десерт</option>
+      <option value="Суп" {% if category=="Суп" %}selected{% endif %}>Супы</option>
+      <option value="Гарнир" {% if category=="Гарнир" %}selected{% endif %}>Гарниры</option>
     </select>
   </label>
   <label>Сложность
     <select name="level">
       <option value="all">Любая</option>
-      {% for lev in ['Очень просто','Просто','Средне','Необычно'] %}
-      <option value="{{ lev }}" {% if level==lev %}selected{% endif %}>{{ lev }}</option>
-      {% endfor %}
+      <option value="Очень просто" {% if level=="Очень просто" %}selected{% endif %}>Очень просто</option>
+      <option value="Просто" {% if level=="Просто" %}selected{% endif %}>Просто</option>
+      <option value="Средне" {% if level=="Средне" %}selected{% endif %}>Средне</option>
+      <option value="Необычно" {% if level=="Необычно" %}selected{% endif %}>Необычно</option>
     </select>
   </label>
   <button type="submit">Показать</button>
 </form>
 
-<div class="recipe-grid">
+<div class="grid">
 {% for r in recipes %}
-  <article class="card recipe-card recipe-detail-card">
-    <div class="recipe-head">
-      <div><b>🍽️ {{ r.title }}</b><span>{{ r.level }} · {{ r.category }} · ⏱ {{ r.time }}</span></div>
-      <div class="recipe-price">{{ r.cost }}<small>ориентир</small></div>
-    </div>
-    <div class="recipe-meta"><span>👥 {{ r.servings }} порции</span><span>🛒 Стоимость продуктов: {{ r.cost }}</span></div>
-    <h3>🛒 Ингредиенты — на {{ r.servings }} порции</h3>
-    <ul>{% for item in r.ingredients %}<li>{{ item }}</li>{% endfor %}</ul>
+  <article class="card recipe-card">
+    <b>🍽️ {{ r[0] }}</b>
+    <span>{{ r[1] }} · {{ r[2] }} · ⏱ {{ r[3] }}</span>
+    <h3>🛒 Ингредиенты</h3>
+    <ul>{% for item in r[4] %}<li>{{ item }}</li>{% endfor %}</ul>
     <h3>👨‍🍳 Приготовление</h3>
-    <ol>{% for step in r.steps %}<li>{{ step }}</li>{% endfor %}</ol>
-    <div class="recipe-tip">💡 Стоимость примерная: зависит от магазина, бренда и цен в вашем городе.</div>
+    <ol>{% for step in r[5] %}<li>{{ step }}</li>{% endfor %}</ol>
   </article>
 {% endfor %}
 </div>
 
-{% if not recipes %}<div class="result"><h2>Ничего не найдено</h2><p>Попробуй изменить фильтры.</p></div>{% endif %}
+<div class="result">
+  <h2>💡 Идея</h2>
+  <p>В будущем в LIVO можно добавить поиск по ингредиентам: пользователь вводит продукты, которые есть дома, а сайт предлагает подходящие рецепты.</p>
+</div>
 {% endblock %}

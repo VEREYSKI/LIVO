@@ -13,7 +13,7 @@
 <div class="grid poster-grid" id="gamesGrid">
 {% for game in games %}
 <div class="card game-card poster-card" data-search="{{ game.title }} {{ game.genre }} {{ game.platform }} {{ game.year }}">
-  <img class="poster-image" src="{{ game.poster }}" alt="Обложка {{ game.title }}" loading="lazy">
+  {% if game.poster %}<img class="poster-image" src="{{ game.poster }}" alt="Обложка {{ game.title }}" loading="lazy">{% else %}<div class="poster-placeholder">🎮</div>{% endif %}
   <b>{{ game.title }}</b><span>{{ game.genre }}</span><small>{{ game.year }} · {{ game.platform }}</small>
 </div>
 {% endfor %}

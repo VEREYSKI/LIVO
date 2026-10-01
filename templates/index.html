@@ -22,15 +22,15 @@
 <div class="section-title"><h2>🔥 Фильмы 2000–2026</h2><a href="{{ url_for('movies') }}">Весь каталог →</a></div>
 <div class="movie-grid">
 {% for movie in movies[:8] %}
-  <div class="card poster poster-home"><img class="poster-image" src="{{ movie.poster }}" alt="Постер {{ movie.title }}" loading="lazy"><div class="poster-content"><b>{{ movie.title }}</b><span>{{ movie.year }} · {{ movie.genre }}</span><small class="rating">{{ movie.year }}</small></div></div>
+  <div class="card poster"><div class="poster-content"><b>{{ movie.title }}</b><span>{{ movie.year }} · {{ movie.genre }}</span><small class="rating">{{ movie.year }}</small></div></div>
 {% endfor %}
 </div>
 <div class="section-title"><h2>🎮 Популярные игры</h2><a href="{{ url_for('games') }}">Все игры →</a></div>
 <div class="movie-grid">
-  <div class="card poster poster-home"><img class="poster-image" src="{{ games[38].poster }}" alt="Minecraft" loading="lazy"><div class="poster-content"><b>Minecraft</b><span>PC · Console · Mobile</span><small class="rating">★ 9.2</small></div></div>
-  <div class="card poster poster-home"><img class="poster-image" src="{{ games[4].poster }}" alt="GTA V" loading="lazy"><div class="poster-content"><b>GTA V</b><span>PC · PS · Xbox</span><small class="rating">★ 9.4</small></div></div>
-  <div class="card poster poster-home"><img class="poster-image" src="{{ games[14].poster }}" alt="Cyberpunk 2077" loading="lazy"><div class="poster-content"><b>Cyberpunk 2077</b><span>PC · PS · Xbox</span><small class="rating">★ 8.8</small></div></div>
-  <div class="card poster poster-home"><img class="poster-image" src="{{ games[28].poster }}" alt="Elden Ring" loading="lazy"><div class="poster-content"><b>Elden Ring</b><span>PC · PS · Xbox</span><small class="rating">★ 9.5</small></div></div>
+  <div class="card poster"><div class="poster-content"><b>Minecraft</b><span>PC · Console · Mobile</span><small class="rating">★ 9.2</small></div></div>
+  <div class="card poster"><div class="poster-content"><b>GTA V</b><span>PC · PS · Xbox</span><small class="rating">★ 9.4</small></div></div>
+  <div class="card poster"><div class="poster-content"><b>Cyberpunk 2077</b><span>PC · PS · Xbox</span><small class="rating">★ 8.8</small></div></div>
+  <div class="card poster"><div class="poster-content"><b>Elden Ring</b><span>PC · PS · Xbox</span><small class="rating">★ 9.5</small></div></div>
 </div>
 <div class="premium-bar">
   <div><b>✨ Открой для себя больше</b><br><span class="note">Подборки, челленджи и идеи для каждого дня.</span></div>

@@ -2,7 +2,7 @@
 {% block title %}Фитнес — LIVO{% endblock %}
 {% block content %}
 <h1>🏋️ Фитнес LIVO</h1>
-<p>Выбери цель, уровень, мышцы и оборудование. Фильтры внутри одной группы объединяются через «ИЛИ», а между группами — через «И».</p>
+<p>Выбери цель и уровень — LIVO подберёт подходящие упражнения и тренажёры.</p>
 
 <form class="form" method="get" action="{{ url_for('fitness') }}">
   <label>🎯 Цель
@@ -23,7 +23,7 @@
   </label>
 
   <fieldset class="filter-group">
-    <legend>💪 Мышцы — можно выбрать несколько</legend>
+    <legend>💪 Мышцы</legend>
     <div class="filter-options">
       {% for muscle in muscles %}
       <label class="check-option">
@@ -35,7 +35,7 @@
   </fieldset>
 
   <fieldset class="filter-group">
-    <legend>🏋️ Оборудование — можно выбрать несколько</legend>
+    <legend>🏋️ Оборудование</legend>
     <div class="filter-options">
       {% for item in equipment %}
       <label class="check-option">
@@ -69,33 +69,6 @@
     <h3>Ничего не найдено</h3>
     <p>Попробуй убрать один из фильтров или выбрать другое оборудование.</p>
     <a class="button secondary" href="{{ url_for('fitness') }}">Сбросить фильтры</a>
-  </div>
-{% endfor %}
-</div>
-
-
-<div class="section-title">
-  <h2>📋 Готовые тренировки</h2>
-  <span class="filter-count">{{ workouts|length }} программ</span>
-</div>
-<div class="grid">
-{% for w in workouts %}
-  <article class="card workout-card">
-    <b>{{ w[0] }}</b>
-    <span>📈 {{ levels[w[1]] }} · ⏱️ {{ w[3] }} мин</span>
-    <small>🎯 {{ ", ".join(goals[g] for g in w[2]) }}</small>
-    <small>Упражнений: {{ w[4]|length }}</small>
-    <details>
-      <summary>Показать программу</summary>
-      <ol>
-      {% for exercise in w[4] %}<li>{{ exercise }}</li>{% endfor %}
-      </ol>
-    </details>
-  </article>
-{% else %}
-  <div class="result empty-result">
-    <h3>Для этой комбинации пока нет готовой программы</h3>
-    <p>Убери один фильтр или выбери другой уровень/цель.</p>
   </div>
 {% endfor %}
 </div>

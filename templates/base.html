@@ -16,23 +16,10 @@
     <a href="{{ url_for('challenges') }}">🔥 Челленджи</a>
     <a href="{{ url_for('pc_builder') }}">🖥️ ПК</a>
     <a href="{{ url_for('recipes') }}">🍳 Рецепты</a>
-    <a href="{{ url_for('social') }}">📱 Соцсети</a>
   </nav>
-  <div class="auth-nav">
-    {% if current_user %}
-      <a class="auth-user" href="{{ url_for('profile') }}">👤 {{ current_user['name'] }}</a>
-      <a class="auth-link" href="{{ url_for('logout') }}">Выйти</a>
-    {% else %}
-      <a class="auth-link" href="{{ url_for('login') }}">Войти</a>
-      <a class="auth-cta" href="{{ url_for('register') }}">Создать аккаунт бесплатно</a>
-    {% endif %}
-  </div>
 </header>
 
 <main class="container">
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}<div class="flash-stack">{% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}
-  {% endwith %}
   {% block content %}{% endblock %}
 </main>
 
@@ -40,12 +27,7 @@
   <a href="{{ url_for('about') }}">📖 О сайте</a>
   <a href="{{ url_for('privacy') }}">🔒 Конфиденциальность</a>
   <a href="{{ url_for('policy') }}">📜 Политика</a>
-  <a href="{{ url_for('support') }}">🛟 Поддержка</a>
-  <div class="footer-meta">
-    <span>Сайт создаётся с 3 августа 2026 года</span>
-    <span>© 2026 LIVO. Все права защищены.</span>
-    <span>ООО «ЛивоЛайф» · Amsterdam, Нидерланды</span><span>Поддержка: <a href="mailto:n90595548@gmail.com">n90595548@gmail.com</a> · <a href="tel:+447705810630">+44 7705 810630</a></span>
-  </div>
+  <a href="{{ url_for('social') }}">📱 Социальные сети</a>
 </footer>
 </body>
 </html>

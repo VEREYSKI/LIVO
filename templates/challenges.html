@@ -14,13 +14,13 @@
   {% endfor %}
 </div>
 
-<section class="dice-zone" aria-label="Случайный челлендж">
+<section class="dice-zone">
   <button class="dice-button" id="diceButton" type="button" aria-label="Получить случайный челлендж">
     <span class="dice">⚄</span>
   </button>
   <div class="dice-copy">
     <h2>Твой случайный челлендж</h2>
-    <p>Нажми на кубик, чтобы получить случайное задание{% if category != "all" %} из категории «{{ category }}»{% endif %}.</p>
+    <p>Нажми на кубик, чтобы получить случайное задание.</p>
   </div>
 </section>
 
@@ -40,7 +40,6 @@
 
 <script>
 const challenges = {{ challenges | tojson }};
-const selectedCategory = {{ category | tojson }};
 const diceButton = document.getElementById('diceButton');
 const rerollButton = document.getElementById('rerollButton');
 const result = document.getElementById('challengeResult');
@@ -48,15 +47,7 @@ const result = document.getElementById('challengeResult');
 let lastIndex = -1;
 
 function randomChallenge() {
-  if (!challenges.length) {
-    result.hidden = false;
-    document.getElementById('resultTitle').textContent = 'В этой категории пока нет челленджей';
-    document.getElementById('resultDescription').textContent = 'Выбери другую категорию или нажми «Все».';
-    document.getElementById('resultDuration').textContent = '';
-    document.getElementById('resultLevel').textContent = '';
-    document.getElementById('resultCategory').textContent = selectedCategory === 'all' ? '' : selectedCategory;
-    return;
-  }
+  if (!challenges.length) return;
 
   let index = Math.floor(Math.random() * challenges.length);
   if (challenges.length > 1 && index === lastIndex) {
