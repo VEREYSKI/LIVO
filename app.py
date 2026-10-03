@@ -642,6 +642,171 @@ def api_games():
     return jsonify(total=len(out), items=out[:_limit()])
 
 
+# ---------------------------------------------------------------------------
+# Постеры: TMDB (официальные постеры, поиск по названию и году) + запасной вариант Wikipedia.
+# Ключ TMDB берётся из переменной окружения TMDB_API_KEY (бесплатно на themoviedb.org).
+# Если постер не найден, показывается заглушка — чужие картинки не подставляются.
+# ---------------------------------------------------------------------------
+_POSTER_MEM = {}          # (kind, title, year) -> (url, saved_at)
+_POSTER_OK_TTL = 60 * 60 * 24 * 30
+_POSTER_FAIL_TTL = 60 * 10
+_UA = {"User-Agent": "LIVO/1.0 (https://livo.onrender.com; poster lookup)"}
+
+
+def _norm_title(t):
+    t = re.sub(r"\(.*?\)", "", str(t).lower())
+    return re.sub(r"[^a-z0-9а-яё]+", "", t)
+
+
+def _poster_db():
+    con = sqlite3.connect(str(userdb.DATA_DIR / "livo_posters.db"), timeout=10)
+    con.execute("CREATE TABLE IF NOT EXISTS posters(k TEXT PRIMARY KEY, url TEXT NOT NULL, saved_at INTEGER NOT NULL)")
+    return con
+
+
+def _poster_db_get(key):
+    try:
+        with _poster_db() as con:
+            row = con.execute("SELECT url, saved_at FROM posters WHERE k=?", (key,)).fetchone()
+        if row and time.time() - row[1] < _POSTER_OK_TTL:
+            return row[0]
+    except Exception:
+        pass
+    return ""
+
+
+def _poster_db_set(key, url):
+    try:
+        with _poster_db() as con:
+            con.execute("INSERT OR REPLACE INTO posters(k,url,saved_at) VALUES(?,?,?)", (key, url, int(time.time())))
+    except Exception:
+        pass
+
+
+def _tmdb_request(path, params):
+    key = os.getenv("TMDB_API_KEY", "").strip()
+    if not key:
+        return None
+    headers = dict(_UA)
+    params = dict(params, include_adult="false", language="en-US")
+    if key.startswith("eyJ"):                       # токен v4 (Bearer)
+        headers["Authorization"] = f"Bearer {key}"
+    else:                                           # ключ v3
+        params["api_key"] = key
+    r = requests.get(f"https://api.themoviedb.org/3{path}", params=params, headers=headers, timeout=6)
+    r.raise_for_status()
+    return r.json().get("results", [])
+
+
+def _pick_tmdb(results, title, year):
+    """Выбирает результат с постером: сначала совпадение названия И года (±1), потом точное название."""
+    want = _norm_title(title)
+    cands = []
+    for r in results or []:
+        if not r.get("poster_path"):
+            continue
+        names = {_norm_title(r.get("title") or r.get("name") or ""),
+                 _norm_title(r.get("original_title") or r.get("original_name") or "")}
+        date = (r.get("release_date") or r.get("first_air_date") or "")[:4]
+        year_ok = bool(year and date.isdigit() and abs(int(date) - int(year)) <= 1)
+        cands.append((want in names, year_ok, r.get("popularity", 0), r["poster_path"]))
+    for need_year in (True, False):
+        pool = [c for c in cands if c[0] and (c[1] or not need_year)]
+        if pool:
+            return "https://image.tmdb.org/t/p/w500" + max(pool, key=lambda c: c[2])[3]
+    return ""
+
+
+def _tmdb_poster(title, year):
+    for path, ykey in (("/search/movie", "year"), ("/search/tv", "first_air_date_year")):
+        for use_year in ((True, False) if year else (False,)):
+            params = {"query": title}
+            if use_year:
+                params[ykey] = year
+            try:
+                results = _tmdb_request(path, params)
+            except Exception:
+                return ""
+            if results is None:                      # ключ не задан
+                return ""
+            url = _pick_tmdb(results, title, year)
+            if url:
+                return url
+    return ""
+
+
+def _wiki_poster(title, year, kind):
+    """Запасной вариант. Для фильмов принимаем только страницу с тем же названием и тем же годом."""
+    if kind == "game":
+        queries = [f"{title} video game {year}", f"{title} video game"]
+        words = ("video game", "videogame", "game developed", "game published")
+    else:
+        queries = [f"{title} {year} film", f"{title} film"]
+        words = ("film", "movie", "miniseries", "television series", "animated")
+    want = _norm_title(title)
+    for q in queries:
+        try:
+            r = requests.get(
+                "https://en.wikipedia.org/w/api.php",
+                params={"action": "query", "generator": "search", "gsrsearch": q, "gsrnamespace": 0,
+                        "gsrlimit": 6, "prop": "pageimages|extracts", "piprop": "thumbnail",
+                        "pithumbsize": 600, "exintro": 1, "explaintext": 1, "exsentences": 2,
+                        "exlimit": "max", "format": "json"},
+                headers=_UA, timeout=6)
+            r.raise_for_status()
+            pages = sorted((r.json().get("query") or {}).get("pages", {}).values(),
+                           key=lambda p: p.get("index", 99))
+        except Exception:
+            continue
+        for p in pages:
+            thumb = (p.get("thumbnail") or {}).get("source")
+            if not thumb:
+                continue
+            text = ((p.get("title") or "") + " " + (p.get("extract") or "")).lower()
+            if not any(w in text for w in words):
+                continue
+            ptitle = _norm_title(p.get("title", ""))
+            if not (want and (want == ptitle or want in ptitle)):
+                continue
+            if kind == "movie" and year and str(year) not in text:
+                continue
+            return thumb
+    return ""
+
+
+def find_poster(title, year, kind):
+    if kind == "movie":
+        url = _tmdb_poster(title, year)
+        if url:
+            return url
+    return _wiki_poster(title, year, kind)
+
+
+@app.get("/api/poster")
+def api_poster():
+    title = request.args.get("title", "").strip()[:120]
+    kind = "game" if request.args.get("kind") == "game" else "movie"
+    year = re.sub(r"\D", "", request.args.get("year", ""))[:4]
+    if not title:
+        return jsonify(url="")
+    key = (kind, title.lower(), year)
+    now = time.time()
+    hit = _POSTER_MEM.get(key)
+    if hit and now - hit[1] < (_POSTER_OK_TTL if hit[0] else _POSTER_FAIL_TTL):
+        url = hit[0]
+    else:
+        dbkey = "|".join(key)
+        url = _poster_db_get(dbkey) or find_poster(title, year, kind)
+        if url:
+            _poster_db_set(dbkey, url)
+        if len(_POSTER_MEM) > 5000:
+            _POSTER_MEM.clear()
+        _POSTER_MEM[key] = (url, now)
+    resp = jsonify(url=url)
+    resp.headers["Cache-Control"] = "public, max-age=86400" if url else "no-store"
+    return resp
+
+
 @app.post("/api/favorite")
 def api_favorite():
     if not g.user:
@@ -801,7 +966,7 @@ def profile_settings():
         for msg in errors.values():
             flash(msg, "error")
         return redirect(url_for("profile", tab="settings"))
-    userdb.update_profile(u["id"], display, bio, username, email)
+    userdb.update_profile(u["id"], display, bio, username, email, show_stats=bool(request.form.get("show_stats")))
     userdb.set_theme(u["id"], theme)
     flash("Настройки сохранены ✅", "success")
     return redirect(url_for("profile", tab="settings"))
@@ -906,6 +1071,100 @@ def too_large(_):
 @app.errorhandler(404)
 def not_found(_):
     return render_template("404.html"), 404
+
+
+# ---------------------------------------------------------------------------
+# Друзья и публичные профили
+# ---------------------------------------------------------------------------
+_user_search_hits = {}
+
+
+def _search_throttled():
+    now = time.time()
+    ip = request.remote_addr or "?"
+    recent = [t for t in _user_search_hits.get(ip, []) if now - t < 60]
+    recent.append(now)
+    _user_search_hits[ip] = recent
+    if len(_user_search_hits) > 2000:
+        _user_search_hits.clear()
+    return len(recent) > 60
+
+
+def _top_genre(movies, games):
+    counts = {}
+    for item in list(movies) + list(games):
+        for part in item["genre"].split("/"):
+            part = part.strip()
+            if part:
+                counts[part] = counts.get(part, 0) + 1
+    return max(counts, key=counts.get) if counts else ""
+
+
+@app.route("/friends")
+def friends():
+    q = request.args.get("q", "").strip()[:24]
+    me = g.user["id"] if g.user else 0
+    results = userdb.search_users(q, 20, exclude_id=me) if len(q) >= 2 else []
+    my_friends = userdb.friends_of(me) if me else []
+    return render_template("friends.html", q=q, results=results, my_friends=my_friends,
+                           friend_ids={r["id"] for r in my_friends})
+
+
+@app.get("/api/users")
+def api_users():
+    if _search_throttled():
+        return jsonify(error="Слишком много запросов. Подожди минуту."), 429
+    q = request.args.get("q", "").strip()[:24]
+    me = g.user["id"] if g.user else 0
+    if len(q) < 2:
+        return jsonify(items=[], short=True, logged=bool(me))
+    fids = userdb.friend_ids(me) if me else set()
+    items = [{"id": r["id"], "username": r["username"], "display_name": r["display_name"],
+              "has_avatar": bool(r["has_avatar"]), "avatar_v": r["avatar_v"],
+              "show_stats": bool(r["show_stats"]), "favs": r["favs"], "views": r["views"],
+              "friend": r["id"] in fids}
+             for r in userdb.search_users(q, 20, exclude_id=me)]
+    return jsonify(items=items, short=False, logged=bool(me))
+
+
+@app.route("/u/<username>")
+def public_profile(username):
+    row = userdb.get_user_by_username(username)
+    if row is None:
+        abort(404)
+    own = bool(g.user) and g.user["id"] == row["id"]
+    visible = bool(row["show_stats"]) or own
+    ctx = dict(p=row, own=own, visible=visible, is_friend=False, stats=None,
+               fav_movies=[], fav_games=[], top_genre="", total_fav_movies=0, total_fav_games=0)
+    if g.user and not own:
+        ctx["is_friend"] = userdb.is_friend(g.user["id"], row["id"])
+    if visible:
+        uid = row["id"]
+        movies = [MOVIES[i] for i in userdb.favorite_ids(uid, "movie") if i < len(MOVIES)]
+        games = [GAMES[i] for i in userdb.favorite_ids(uid, "game") if i < len(GAMES)]
+        seen = [MOVIES[i] for i, _ in userdb.history_items(uid) if i < len(MOVIES)]
+        ctx.update(stats=userdb.user_stats(uid), fav_movies=movies[:12], fav_games=games[:12],
+                   total_fav_movies=len(movies), total_fav_games=len(games),
+                   top_genre=_top_genre(movies + seen, games))
+    return render_template("public_profile.html", **ctx)
+
+
+@app.post("/friends/add/<int:uid>")
+@login_required
+def friend_add(uid):
+    if userdb.add_friend(g.user["id"], uid):
+        flash("Добавлено в друзья ✅", "success")
+    else:
+        flash("Не удалось добавить пользователя.", "error")
+    return redirect(safe_next(request.form.get("next"), url_for("friends")))
+
+
+@app.post("/friends/remove/<int:uid>")
+@login_required
+def friend_remove(uid):
+    userdb.remove_friend(g.user["id"], uid)
+    flash("Убрано из друзей.", "info")
+    return redirect(safe_next(request.form.get("next"), url_for("friends")))
 
 
 @app.route("/places")

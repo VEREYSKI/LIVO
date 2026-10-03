@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Друзья — LIVO{% endblock %}
+{% block content %}
+<h1>👥 Друзья</h1>
+<p>Найди друзей по имени пользователя и смотри их статистику.</p>
+<form class="search" id="userSearchForm" role="search" method="get" action="{{ url_for('friends') }}">
+  <input id="userSearch" name="q" type="search" value="{{ q }}" autocomplete="off" maxlength="24" placeholder="Имя пользователя…" aria-label="Имя пользователя…">
+  <button type="submit" aria-label="Искать">⌕</button>
+</form>
+{% if not user %}<p class="note">Войди в аккаунт, чтобы добавлять друзей.</p>{% endif %}
+
+<div class="section-title"><h2>Результаты поиска</h2></div>
+<div id="userResults" class="user-list" data-logged="{{ 1 if user else 0 }}" aria-live="polite">
+  {% if q|length >= 2 %}
+    {% for u in results %}{% include "_user_card.html" %}
+    {% else %}<div class="empty-state"><span class="big">🔍</span><h3>Никого не найдено</h3></div>{% endfor %}
+  {% else %}<p class="note">Введи минимум 2 символа.</p>{% endif %}
+</div>
+
+{% if user %}
+<div class="section-title"><h2>Мои друзья</h2></div>
+<div class="user-list">
+  {% for u in my_friends %}{% include "_user_card.html" %}
+  {% else %}<div class="empty-state"><span class="big">👥</span><p>Пока нет друзей. Найди кого-нибудь по имени пользователя.</p></div>{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

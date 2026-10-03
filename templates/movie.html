@@ -3,7 +3,7 @@
 {% block content %}
 <a class="back-link" href="{{ url_for('movies') }}">← Все фильмы</a>
 <section class="movie-hero movie-detail-only">
-  <div class="poster-ph poster-detail" data-poster-title="{{ movie.title|e }}" data-poster-kind="movie" style="--h:{{ movie.title|hue }}">
+  <div class="poster-ph poster-detail" data-poster-title="{{ movie.title|e }}" data-poster-year="{{ movie.year }}" data-poster-kind="movie" style="--h:{{ movie.title|hue }}">
     <span class="poster-loading">Загрузка постера…</span>
     <span class="ph-emoji" aria-hidden="true">🎬</span>
     <span class="ph-year">{{ movie.year }}</span>

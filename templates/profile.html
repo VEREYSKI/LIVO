@@ -8,6 +8,7 @@
     <h1>{{ user.display_name }}</h1>
     <div class="handle">@{{ user.username }}</div>
     {% if user.bio %}<p class="bio">{{ user.bio }}</p>{% endif %}
+    <div class="profile-actions"><a class="btn btn-sm btn-ghost" href="{{ url_for('public_profile', username=user.username) }}">Мой публичный профиль</a></div>
     <div class="stats">
       <div class="stat"><b>{{ fav_movies|length + fav_games|length }}</b>в избранном</div>
       <div class="stat"><b>{{ history|length }}</b>просмотрено</div>
@@ -19,6 +20,7 @@
 <div class="tabs" role="tablist">
   <a href="{{ url_for('profile', tab='favorites') }}" class="{{ 'active' if tab=='favorites' }}">❤️ Избранное</a>
   <a href="{{ url_for('profile', tab='history') }}" class="{{ 'active' if tab=='history' }}">🕘 История</a>
+  <a href="{{ url_for('friends') }}">👥 Друзья</a>
   <a href="{{ url_for('profile', tab='settings') }}" class="{{ 'active' if tab=='settings' }}">⚙️ Настройки</a>
 </div>
 
@@ -82,6 +84,7 @@
     <label>Имя пользователя<input name="username" value="{{ user.username }}" minlength="3" maxlength="24" required></label>
     <label>Email<input name="email" type="email" value="{{ user.email }}" required></label>
     <label>О себе<textarea name="bio" maxlength="200">{{ user.bio }}</textarea></label>
+    <label class="check-row"><input type="checkbox" name="show_stats" value="1" {{ 'checked' if user.show_stats }}> Показывать мою статистику и избранное другим пользователям</label>
     <div><b style="font-size:14px">🌐 Язык интерфейса</b>
       <select data-language class="language-setting" aria-label="Язык интерфейса" style="margin-top:8px;width:100%">
         <option value="ru">Русский</option><option value="en">English</option><option value="de">Deutsch</option><option value="fr">Français</option><option value="es">Español</option><option value="it">Italiano</option><option value="uk">Українська</option><option value="pl">Polski</option><option value="nl">Nederlands</option>

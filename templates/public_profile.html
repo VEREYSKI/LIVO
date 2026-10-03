@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ p.display_name }} (@{{ p.username }}) — LIVO{% endblock %}
+{% block content %}
+<section class="profile-head">
+  {% if p.has_avatar %}<img class="avatar avatar-lg" src="{{ url_for('avatar', uid=p.id) }}?v={{ p.avatar_v }}" alt="">{% else %}<span class="avatar avatar-ph avatar-lg">{{ p.display_name|initial }}</span>{% endif %}
+  <div>
+    <h1>{{ p.display_name }}</h1>
+    <div class="handle">@{{ p.username }}</div>
+    {% if p.bio %}<p class="bio">{{ p.bio }}</p>{% endif %}
+    <div class="profile-actions">
+      {% if own %}
+        <span class="note">Это ваш профиль</span>
+        <a class="btn btn-sm btn-ghost" href="{{ url_for('profile', tab='settings') }}">Редактировать профиль</a>
+      {% elif user %}
+        <form method="post" action="{{ url_for('friend_remove' if is_friend else 'friend_add', uid=p.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="next" value="{{ request.path }}">
+          {% if is_friend %}<button class="btn btn-sm btn-ghost" type="submit">Убрать из друзей</button>
+          {% else %}<button class="btn btn-sm btn-purple" type="submit">Добавить в друзья</button>{% endif %}
+        </form>
+      {% else %}
+        <span class="note">Войди в аккаунт, чтобы добавлять друзей.</span>
+      {% endif %}
+      <a class="btn btn-sm btn-ghost" href="{{ url_for('friends') }}">К поиску друзей</a>
+    </div>
+  </div>
+</section>
+
+{% if visible %}
+<div class="section-title"><h2>Статистика</h2></div>
+<div class="stats stats-big">
+  <div class="stat"><b>{{ stats.fav_movies }}</b>Фильмов в избранном</div>
+  <div class="stat"><b>{{ stats.fav_games }}</b>Игр в избранном</div>
+  <div class="stat"><b>{{ stats.views }}</b>Просмотрено фильмов</div>
+  <div class="stat"><b>{{ stats.friends }}</b>Друзей</div>
+  <div class="stat"><b>{{ p.created_at|datefmt|truncate(10,True,'') }}</b>С нами с</div>
+  {% if top_genre %}<div class="stat"><b>{{ top_genre }}</b>Любимый жанр</div>{% endif %}
+</div>
+
+<div class="section-title"><h2>🎬 Избранные фильмы</h2></div>
+{% if fav_movies %}<div class="grid poster-grid">
+  {% for m in fav_movies %}
+  <a class="card poster-card reveal" href="{{ url_for('movie_detail', movie_id=m.id) }}"><div class="poster-ph" data-poster-title="{{ m.title|e }}" data-poster-year="{{ m.year }}" data-poster-kind="movie" style="--h:{{ m.title|hue }}"><span class="poster-loading">Загрузка…</span><span class="ph-emoji" aria-hidden="true">🎬</span><span class="ph-year">{{ m.year }}</span></div><b>{{ m.title }}</b><span>{{ m.genre }}</span></a>
+  {% endfor %}
+</div>{% else %}<p class="note">Пока ничего нет.</p>{% endif %}
+
+<div class="section-title"><h2>🎮 Избранные игры</h2></div>
+{% if fav_games %}<div class="grid poster-grid">
+  {% for x in fav_games %}
+  <div class="card poster-card game-card reveal"><div class="card-main"><div class="poster-ph" data-poster-title="{{ x.title|e }}" data-poster-year="{{ x.year }}" data-poster-kind="game" style="--h:{{ x.title|hue }}"><span class="poster-loading">Загрузка…</span><span class="ph-emoji" aria-hidden="true">🎮</span><span class="ph-year">{{ x.year }}</span></div><b>{{ x.title }}</b><span>{{ x.genre }}</span></div></div>
+  {% endfor %}
+</div>{% else %}<p class="note">Пока ничего нет.</p>{% endif %}
+{% else %}
+<div class="empty-state"><span class="big">🔒</span><p>Пользователь скрыл свою статистику и избранное.</p></div>
+{% endif %}
+{% endblock %}

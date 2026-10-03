@@ -15,12 +15,12 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 {% set ep = request.endpoint %}
-{% set nav = [('movies','🎬','Фильмы'),('games','🎮','Игры'),('fitness','🏋️','Фитнес'),('challenges','🔥','Челленджи'),('pc_builder','🖥️','ПК'),('recipes','🍳','Рецепты')] %}
+{% set nav = [('movies','🎬','Фильмы'),('games','🎮','Игры'),('fitness','🏋️','Фитнес'),('challenges','🔥','Челленджи'),('pc_builder','🖥️','ПК'),('recipes','🍳','Рецепты'),('friends','👥','Друзья')] %}
 <body data-auth="{{ 1 if user else 0 }}">
 <header class="header">
   <a class="logo" href="{{ url_for('index') }}">LIVO</a>
   <nav aria-label="Основное меню">
-    {% for e,i,t in nav %}<a href="{{ url_for(e) }}" class="{{ 'active' if ep==e or (e=='movies' and ep=='movie_detail') }}">{{ i }} {{ t }}</a>{% endfor %}
+    {% for e,i,t in nav %}<a href="{{ url_for(e) }}" class="{{ 'active' if ep==e or (e=='movies' and ep=='movie_detail') or (e=='friends' and ep=='public_profile') }}">{{ i }} {{ t }}</a>{% endfor %}
     {% if not in_app %}<a href="{{ url_for('app_page') }}" class="{{ 'active' if ep=='app_page' }}">📲 Приложение</a>{% endif %}
   </nav>
   <div class="header-actions">
