@@ -1,8 +1,84 @@
 from pathlib import Path
 import re
-from flask import Flask, render_template, request
+import functools, hmac, os, secrets, time
+from flask import (Flask, Response, abort, flash, g, jsonify, redirect, render_template, send_file,
+                   request, session, url_for)
+from werkzeug.security import check_password_hash, generate_password_hash
+import userdb
 
 app = Flask(__name__)
+app.config.update(
+    SECRET_KEY=userdb.secret_key(),
+    MAX_CONTENT_LENGTH=3 * 1024 * 1024,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=bool(os.getenv("RENDER") or os.getenv("LIVO_HTTPS")),
+    PERMANENT_SESSION_LIFETIME=60 * 60 * 24 * 30,
+    JSON_AS_ASCII=False,
+)
+if os.getenv("RENDER"):
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
+userdb.init_db()
+
+
+def csrf_token():
+    token = session.get("_csrf")
+    if not token:
+        token = session["_csrf"] = secrets.token_urlsafe(32)
+    return token
+
+
+@app.before_request
+def load_user_and_check_csrf():
+    g.user = None
+    if request.endpoint == "static":
+        return
+    uid = session.get("uid")
+    if uid:
+        g.user = userdb.get_user(uid)
+        if g.user is None:
+            session.pop("uid", None)
+    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        sent = request.headers.get("X-CSRF-Token") or request.form.get("csrf_token", "")
+        if not sent or not hmac.compare_digest(sent.encode(), session.get("_csrf", "").encode()):
+            if request.path.startswith("/api/"):
+                return jsonify(error="Сессия устарела. Обнови страницу."), 400
+            flash("Сессия устарела, попробуй ещё раз.", "error")
+            return redirect(url_for("index"))
+
+
+@app.context_processor
+def inject_globals():
+    return {"user": g.get("user"), "csrf_token": csrf_token,
+            "in_app": "LIVOApp" in request.headers.get("User-Agent", "")}
+
+
+@app.after_request
+def security_headers(resp):
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    resp.headers.setdefault("Referrer-Policy", "same-origin")
+    return resp
+
+
+@app.template_filter("datefmt")
+def datefmt(ts):
+    return time.strftime("%d.%m.%Y %H:%M", time.gmtime(ts))
+
+
+@app.template_filter("hue")
+def hue(title):
+    h = 0
+    for ch in str(title):
+        h = (h * 31 + ord(ch)) % 360
+    return h
+
+
+@app.template_filter("initial")
+def initial(name):
+    return (name or "?").strip()[:1].upper() or "?"
+
 
 MOVIES = [
     {"title": 'Gladiator', "genre": 'Исторический / Боевик', "year": 2000, "rating": "—"},
@@ -47,7 +123,7 @@ MOVIES = [
     {"title": 'Pan’s Labyrinth', "genre": 'Фэнтези / Драма', "year": 2006, "rating": "—"},
     {"title": 'Cars', "genre": 'Анимация / Комедия', "year": 2006, "rating": "—"},
     {"title": 'The Pursuit of Happyness', "genre": 'Драма', "year": 2006, "rating": "—"},
-    {"title": 'The Dark Knight', "genre": 'Боевик / Криминал', "year": 2007, "rating": "—"},
+    {"title": 'Zodiac', "genre": 'Триллер / Криминал', "year": 2007, "rating": "—"},
     {"title": 'Ratatouille', "genre": 'Анимация / Комедия', "year": 2007, "rating": "—"},
     {"title": 'There Will Be Blood', "genre": 'Драма', "year": 2007, "rating": "—"},
     {"title": 'No Country for Old Men', "genre": 'Криминал / Триллер', "year": 2007, "rating": "—"},
@@ -177,6 +253,10 @@ MOVIES = [
     {"title": 'Soulm8te', "genre": 'Ужасы / Фантастика', "year": 2026, "rating": "—"},
     {"title": 'The Whisper Man', "genre": 'Триллер', "year": 2026, "rating": "—"},
 ]
+
+from movies_extra import MOVIES_EXTRA
+_seen = {(m["title"].lower(), m["year"]) for m in MOVIES}
+MOVIES.extend(m for m in MOVIES_EXTRA if (m["title"].lower(), m["year"]) not in _seen)
 
 GAMES = [
     {"title": 'Grand Theft Auto III', "year": 2001, "genre": 'Action / Open World', "platform": 'PC / PS2 / Xbox'},
@@ -469,26 +549,364 @@ FPS_PROFILES = {'RTX 4060': {'1080p': {'Fortnite': 173, 'CS2': 317, 'Valorant': 
 
 RECIPES = [('Омлет с сыром', 'Очень просто', 'Завтрак', '10 мин', ['2 яйца', '30 г сыра', '1 ч. л. масла', 'соль'], ['Взбей яйца с солью.', 'Разогрей сковороду с маслом.', 'Влей яйца, посыпь сыром и готовь 3–5 минут.']), ('Горячие бутерброды', 'Очень просто', 'Завтрак', '10 мин', ['4 ломтика хлеба', 'сыр', 'помидор', 'ветчина по желанию'], ['Собери бутерброды.', 'Запекай при 180°C около 7–10 минут.', 'Подавай горячими.']), ('Паста с чесноком', 'Очень просто', 'Обед', '15 мин', ['200 г пасты', '2 зубчика чеснока', '2 ст. л. масла', 'сыр'], ['Отвари пасту.', 'Обжарь чеснок в масле 1–2 минуты.', 'Смешай с пастой и сыром.']), ('Картофель по-деревенски', 'Просто', 'Гарнир', '40 мин', ['500 г картофеля', '1 ст. л. масла', 'паприка', 'соль'], ['Нарежь картофель дольками.', 'Перемешай со специями и маслом.', 'Запекай при 200°C 30–35 минут.']), ('Кесадилья с сыром', 'Просто', 'Перекус', '15 мин', ['2 тортильи', '100 г сыра', 'кукуруза', 'помидор'], ['Разложи начинку на тортилье.', 'Накрой второй и обжарь на сухой сковороде.', 'Нарежь треугольниками.']), ('Домашняя пицца', 'Просто', 'Ужин', '45 мин', ['тесто', 'томатный соус', 'сыр', 'помидоры', 'грибы'], ['Раскатай тесто.', 'Добавь соус и начинку.', 'Выпекай при 220°C 12–15 минут.']), ('Курица терияки', 'Средне', 'Ужин', '30 мин', ['500 г курицы', 'соевый соус', 'мёд', 'чеснок', 'рис'], ['Нарежь курицу и обжарь.', 'Добавь соевый соус, мёд и чеснок.', 'Подавай с рисом.']), ('Рамен дома', 'Средне', 'Ужин', '30 мин', ['лапша', 'бульон', 'яйцо', 'грибы', 'зелёный лук'], ['Приготовь бульон.', 'Добавь лапшу и грибы.', 'Подавай с варёным яйцом и зелёным луком.']), ('Шакшука', 'Средне', 'Завтрак', '25 мин', ['4 яйца', '400 г томатов', 'лук', 'перец', 'паприка'], ['Обжарь лук и перец.', 'Добавь томаты и специи.', 'Сделай углубления, разбей яйца и накрой крышкой.']), ('Тыквенный крем-суп', 'Средне', 'Суп', '40 мин', ['500 г тыквы', 'лук', '500 мл бульона', 'сливки'], ['Запеки или потуши тыкву с луком.', 'Добавь бульон и провари.', 'Измельчи блендером и добавь сливки.']), ('Лазанья', 'Средне', 'Ужин', '90 мин', ['листы лазаньи', 'фарш', 'томатный соус', 'сыр', 'бешамель'], ['Приготовь мясной соус.', 'Выкладывай слоями пасту, соус и сыр.', 'Запекай при 180°C около 40 минут.']), ('Домашние суши-роллы', 'Средне', 'Ужин', '60 мин', ['рис для суши', 'нори', 'огурец', 'авокадо', 'лосось или креветка'], ['Приготовь рис.', 'Разложи рис на нори и добавь начинку.', 'Сверни ролл и нарежь.']), ('Гёдза', 'Необычно', 'Ужин', '60 мин', ['тесто для гёдза', 'фарш', 'капуста', 'имбирь', 'соевый соус'], ['Смешай начинку.', 'Сформируй небольшие пельмени.', 'Обжарь дно, добавь немного воды и накрой крышкой.']), ('Корейский корн-дог', 'Необычно', 'Перекус', '40 мин', ['сосиски', 'моцарелла', 'мука', 'молоко', 'панировочные сухари'], ['Насади сосиску и сыр на шпажку.', 'Окуни в густое тесто и сухари.', 'Обжарь до золотистой корочки.']), ('Домашний поке', 'Необычно', 'Обед', '25 мин', ['рис', 'лосось или тофу', 'авокадо', 'огурец', 'кунжут'], ['Приготовь рис.', 'Нарежь ингредиенты.', 'Собери всё в миске и добавь соус.']), ('Тако с хрустящей курицей', 'Необычно', 'Ужин', '45 мин', ['тортильи', 'курица', 'панировка', 'салат', 'томатный соус'], ['Запанируй и приготовь курицу.', 'Прогрей тортильи.', 'Собери тако с овощами и соусом.']), ('Паста в съедобной сырной корзинке', 'Необычно', 'Ужин', '35 мин', ['паста', 'твёрдый сыр', 'сливочный соус', 'грибы'], ['Растопи сыр на сковороде и сформируй корзинку.', 'Приготовь пасту и соус.', 'Положи пасту в сырную корзинку.']), ('Радужные панкейки', 'Необычно', 'Завтрак', '30 мин', ['мука', 'молоко', 'яйца', 'разрыхлитель', 'пищевые красители'], ['Сделай тесто и раздели на части.', 'Добавь немного пищевого красителя.', 'Испеки маленькие панкейки и сложи стопкой.']), ('Шоколадная лава-кейк', 'Необычно', 'Десерт', '25 мин', ['100 г шоколада', '50 г масла', '2 яйца', '50 г сахара', '30 г муки'], ['Растопи шоколад с маслом.', 'Смешай с яйцами, сахаром и мукой.', 'Запекай при 200°C примерно 8–10 минут.']), ('Мороженое из банана', 'Очень просто', 'Десерт', '10 мин + заморозка', ['2 банана', 'какао или ягоды'], ['Заморозь нарезанные бананы.', 'Пробей блендером до кремовой текстуры.', 'Добавь какао или ягоды.']), ('Тирамису в стакане', 'Средне', 'Десерт', '30 мин', ['печенье савоярди', 'маскарпоне', 'кофе', 'какао'], ['Сделай крем из маскарпоне.', 'Обмакни печенье в кофе.', 'Выложи слоями и охлади.']), ('Японский чизкейк', 'Необычно', 'Десерт', '90 мин', ['сливочный сыр', 'яйца', 'молоко', 'мука', 'сахар'], ['Приготовь нежное тесто.', 'Перелей в форму.', 'Выпекай на водяной бане при умеренной температуре.']), ('Домашняя лапша с арахисовым соусом', 'Необычно', 'Обед', '25 мин', ['лапша', 'арахисовая паста', 'соевый соус', 'лайм', 'чеснок'], ['Отвари лапшу.', 'Смешай ингредиенты соуса.', 'Перемешай лапшу с соусом и добавь кунжут.']), ('Хрустящий нут', 'Просто', 'Перекус', '35 мин', ['консервированный нут', 'масло', 'паприка', 'соль'], ['Промой и хорошо обсуши нут.', 'Смешай со специями и маслом.', 'Запекай при 200°C 25–30 минут.']), ('Яблочный крамбл', 'Просто', 'Десерт', '40 мин', ['яблоки', 'овсяные хлопья', 'мука', 'масло', 'сахар'], ['Нарежь яблоки.', 'Смешай крошку из хлопьев, муки и масла.', 'Запекай при 180°C около 25 минут.'])]
 
-# Poster images are intentionally disabled to avoid broken/missing external assets.
-# Movie and game cards use a stable local placeholder instead.
-def with_posters(items, mapping=None):
-    return [dict(item, poster=None) for item in items]
+# ---------------------------------------------------------------------------
+# ID для карточек + публичные страницы
+# ---------------------------------------------------------------------------
+for _i, _m in enumerate(MOVIES):
+    _m["id"] = _i
+for _i, _g in enumerate(GAMES):
+    _g["id"] = _i
+
+KINDS = {"movie": MOVIES, "game": GAMES}
+# id фильма = позиция в MOVIES (не менять порядок, только дописывать в конец!),
+# а в каталоге показываем от новых к старым.
+MOVIES_BY_YEAR = sorted(MOVIES, key=lambda m: (-m["year"], m["id"]))
+_HOME_PICKS = ["Inception", "Interstellar", "Dune: Part Two", "Oppenheimer", "The Dark Knight",
+               "Parasite", "Spider-Man: Across the Spider-Verse", "Mad Max: Fury Road"]
+HOME_MOVIES = [m for t in _HOME_PICKS for m in MOVIES if m["title"] == t][:8]
+
 
 @app.route("/")
 def index():
-    return render_template("index.html", movies=MOVIES)
+    return render_template("index.html", movies=HOME_MOVIES)
+
 
 @app.route("/movies")
 def movies():
-    return render_template("movies.html", movies=with_posters(MOVIES))
+    return render_template("movies.html", total=len(MOVIES), q=request.args.get("q", "").strip()[:80])
+
+
+@app.route("/movies/<int:movie_id>")
+def movie_detail(movie_id):
+    if not 0 <= movie_id < len(MOVIES):
+        abort(404)
+    movie = MOVIES[movie_id]
+    if g.user:
+        userdb.add_history(g.user["id"], movie_id)
+    tokens = {t.strip() for t in movie["genre"].split("/")}
+    related = [m for m in MOVIES if m["id"] != movie_id and tokens & {t.strip() for t in m["genre"].split("/")}]
+    related.sort(key=lambda m: abs(m["year"] - movie["year"]))
+    is_fav = bool(g.user) and movie_id in userdb.favorite_ids(g.user["id"], "movie")
+    return render_template("movie.html", movie=movie, related=related[:6], is_fav=is_fav)
+
 
 @app.route("/games")
 def games():
-    return render_template("games.html", games=with_posters(GAMES))
+    return render_template("games.html", total=len(GAMES), q=request.args.get("q", "").strip()[:80])
+
 
 @app.route("/bored")
 def bored():
     return render_template("bored.html", activities=ACTIVITIES)
+
+
+# ---------------------------------------------------------------------------
+# JSON API: живой поиск без перезагрузки
+# ---------------------------------------------------------------------------
+def _match(q, *parts):
+    hay = " ".join(str(p) for p in parts).lower()
+    return all(word in hay for word in q.lower().split())
+
+
+def _limit():
+    try:
+        return max(1, min(int(request.args.get("limit", 500)), 500))
+    except ValueError:
+        return 500
+
+
+@app.get("/api/movies")
+def api_movies():
+    q = request.args.get("q", "")[:80]
+    favs = set(userdb.favorite_ids(g.user["id"], "movie")) if g.user else set()
+    out = [
+        {"id": m["id"], "title": m["title"], "genre": m["genre"], "year": m["year"],
+         "rating": m["rating"], "fav": m["id"] in favs}
+        for m in MOVIES_BY_YEAR if _match(q, m["title"], m["genre"], m["year"])
+    ]
+    return jsonify(total=len(out), items=out[:_limit()])
+
+
+@app.get("/api/games")
+def api_games():
+    q = request.args.get("q", "")[:80]
+    genre = request.args.get("genre", "all").lower()
+    favs = set(userdb.favorite_ids(g.user["id"], "game")) if g.user else set()
+    out = [
+        {"id": x["id"], "title": x["title"], "genre": x["genre"], "year": x["year"],
+         "platform": x["platform"], "fav": x["id"] in favs}
+        for x in GAMES
+        if _match(q, x["title"], x["genre"], x["platform"], x["year"])
+        and (genre == "all" or genre in x["genre"].lower())
+    ]
+    return jsonify(total=len(out), items=out[:_limit()])
+
+
+@app.post("/api/favorite")
+def api_favorite():
+    if not g.user:
+        return jsonify(error="Войди в аккаунт, чтобы добавлять в избранное.", login=True), 401
+    data = request.get_json(silent=True) or {}
+    kind, item_id = data.get("kind"), data.get("id")
+    if kind not in KINDS or not isinstance(item_id, int) or not 0 <= item_id < len(KINDS[kind]):
+        return jsonify(error="Неверный запрос."), 400
+    state = userdb.toggle_favorite(g.user["id"], kind, item_id)
+    return jsonify(favorited=state, title=KINDS[kind][item_id]["title"])
+
+
+@app.post("/api/theme")
+def api_theme():
+    data = request.get_json(silent=True) or {}
+    theme = data.get("theme")
+    if theme not in ("light", "dark", "auto"):
+        return jsonify(error="Неверная тема."), 400
+    if g.user:
+        userdb.set_theme(g.user["id"], theme)
+    return jsonify(ok=True)
+
+
+# ---------------------------------------------------------------------------
+# Аккаунты: регистрация, вход, профиль
+# ---------------------------------------------------------------------------
+USERNAME_RE = re.compile(r"^[A-Za-z0-9_.\-А-Яа-яЁё]{3,24}$")
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+DUMMY_HASH = generate_password_hash("livo-dummy-password")
+_attempts = {}
+
+
+def _rate_limited():
+    now = time.time()
+    ip = request.remote_addr or "?"
+    recent = [t for t in _attempts.get(ip, []) if now - t < 600]
+    _attempts[ip] = recent
+    return len(recent) >= 8
+
+
+def _note_failure():
+    _attempts.setdefault(request.remote_addr or "?", []).append(time.time())
+
+
+def safe_next(url, default):
+    if url and url.startswith("/") and not url.startswith("//") and "\\" not in url:
+        return url
+    return default
+
+
+def login_required(view):
+    @functools.wraps(view)
+    def wrapper(*args, **kwargs):
+        if not g.user:
+            flash("Сначала войди в аккаунт.", "info")
+            return redirect(url_for("login", next=request.full_path.rstrip("?")))
+        return view(*args, **kwargs)
+    return wrapper
+
+
+def validate_profile_fields(username, email, exclude_id=0):
+    errors = {}
+    if not USERNAME_RE.match(username):
+        errors["username"] = "3–24 символа: буквы, цифры, точка, дефис, подчёркивание."
+    elif userdb.exists("username", username, exclude_id):
+        errors["username"] = "Это имя пользователя уже занято."
+    if len(email) > 120 or not EMAIL_RE.match(email):
+        errors["email"] = "Введи корректный email."
+    elif userdb.exists("email", email, exclude_id):
+        errors["email"] = "Этот email уже зарегистрирован."
+    return errors
+
+
+def start_session(uid):
+    session.clear()
+    session["uid"] = uid
+    session.permanent = True
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if g.user:
+        return redirect(url_for("profile"))
+    form, errors = {}, {}
+    if request.method == "POST":
+        form = {k: request.form.get(k, "").strip() for k in ("username", "email")}
+        password = request.form.get("password", "")
+        errors = validate_profile_fields(form["username"], form["email"])
+        if not 8 <= len(password) <= 128:
+            errors["password"] = "Пароль — от 8 до 128 символов."
+        elif password != request.form.get("password2", ""):
+            errors["password2"] = "Пароли не совпадают."
+        if not errors:
+            uid = userdb.create_user(form["email"], form["username"], generate_password_hash(password))
+            start_session(uid)
+            flash("Добро пожаловать в LIVO! 🎉", "success")
+            return redirect(safe_next(request.args.get("next"), url_for("profile")))
+    return render_template("register.html", form=form, errors=errors)
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if g.user:
+        return redirect(url_for("profile"))
+    error, ident = None, ""
+    if request.method == "POST":
+        ident = request.form.get("login", "").strip()[:120]
+        password = request.form.get("password", "")[:128]
+        if _rate_limited():
+            error = "Слишком много попыток. Подожди 10 минут."
+        else:
+            row = userdb.find_user(ident) if ident else None
+            ok = check_password_hash(row["pw_hash"] if row else DUMMY_HASH, password)
+            if row and ok:
+                start_session(row["id"])
+                flash("С возвращением! 👋", "success")
+                return redirect(safe_next(request.args.get("next"), url_for("profile")))
+            _note_failure()
+            error = "Неверный логин или пароль."
+    return render_template("login.html", error=error, ident=ident)
+
+
+@app.post("/logout")
+def logout():
+    session.clear()
+    flash("Ты вышел из аккаунта.", "info")
+    return redirect(url_for("index"))
+
+
+@app.route("/profile")
+@login_required
+def profile():
+    tab = request.args.get("tab", "favorites")
+    if tab not in ("favorites", "history", "settings"):
+        tab = "favorites"
+    uid = g.user["id"]
+    fav_movies = [MOVIES[i] for i in userdb.favorite_ids(uid, "movie") if i < len(MOVIES)]
+    fav_games = [GAMES[i] for i in userdb.favorite_ids(uid, "game") if i < len(GAMES)]
+    history = [(MOVIES[i], ts) for i, ts in userdb.history_items(uid) if i < len(MOVIES)]
+    return render_template("profile.html", tab=tab, fav_movies=fav_movies, fav_games=fav_games,
+                           history=history, errors={})
+
+
+@app.post("/profile/settings")
+@login_required
+def profile_settings():
+    u = g.user
+    display = request.form.get("display_name", "").strip()[:40] or u["username"]
+    bio = request.form.get("bio", "").strip()[:200]
+    username = request.form.get("username", "").strip()
+    email = request.form.get("email", "").strip()
+    theme = request.form.get("theme", "auto")
+    errors = validate_profile_fields(username, email, u["id"])
+    if theme not in ("light", "dark", "auto"):
+        theme = "auto"
+    if errors:
+        for msg in errors.values():
+            flash(msg, "error")
+        return redirect(url_for("profile", tab="settings"))
+    userdb.update_profile(u["id"], display, bio, username, email)
+    userdb.set_theme(u["id"], theme)
+    flash("Настройки сохранены ✅", "success")
+    return redirect(url_for("profile", tab="settings"))
+
+
+@app.post("/profile/password")
+@login_required
+def profile_password():
+    new = request.form.get("new_password", "")
+    if not check_password_hash(g.user["pw_hash"], request.form.get("current_password", "")):
+        flash("Текущий пароль указан неверно.", "error")
+    elif not 8 <= len(new) <= 128:
+        flash("Новый пароль — от 8 до 128 символов.", "error")
+    elif new != request.form.get("new_password2", ""):
+        flash("Новые пароли не совпадают.", "error")
+    else:
+        userdb.set_password(g.user["id"], generate_password_hash(new))
+        flash("Пароль изменён 🔒", "success")
+    return redirect(url_for("profile", tab="settings"))
+
+
+IMAGE_SIGNATURES = (
+    (b"\x89PNG\r\n\x1a\n", "image/png"),
+    (b"\xff\xd8\xff", "image/jpeg"),
+    (b"GIF87a", "image/gif"),
+    (b"GIF89a", "image/gif"),
+)
+AVATAR_MAX = 2 * 1024 * 1024
+
+
+def sniff_image(data):
+    for sig, mime in IMAGE_SIGNATURES:
+        if data.startswith(sig):
+            return mime
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
+    return None
+
+
+@app.post("/profile/avatar")
+@login_required
+def profile_avatar():
+    file = request.files.get("avatar")
+    data = file.read(AVATAR_MAX + 1) if file else b""
+    mime = sniff_image(data) if data else None
+    if not data:
+        flash("Выбери файл с изображением.", "error")
+    elif len(data) > AVATAR_MAX:
+        flash("Файл слишком большой (максимум 2 МБ).", "error")
+    elif not mime:
+        flash("Поддерживаются только PNG, JPG, WEBP и GIF.", "error")
+    else:
+        userdb.set_avatar(g.user["id"], data, mime)
+        flash("Аватар обновлён 📸", "success")
+    return redirect(url_for("profile", tab="settings"))
+
+
+@app.post("/profile/avatar/delete")
+@login_required
+def profile_avatar_delete():
+    userdb.set_avatar(g.user["id"], None, None)
+    flash("Аватар удалён.", "info")
+    return redirect(url_for("profile", tab="settings"))
+
+
+@app.get("/avatar/<int:uid>")
+def avatar(uid):
+    row = userdb.get_avatar(uid)
+    if not row or row["avatar"] is None:
+        abort(404)
+    resp = Response(row["avatar"], mimetype=row["avatar_mime"])
+    resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    return resp
+
+
+@app.post("/profile/history/clear")
+@login_required
+def history_clear():
+    userdb.clear_history(g.user["id"])
+    flash("История просмотров очищена.", "info")
+    return redirect(url_for("profile", tab="history"))
+
+
+@app.post("/profile/delete")
+@login_required
+def profile_delete():
+    if not check_password_hash(g.user["pw_hash"], request.form.get("password", "")):
+        flash("Пароль неверный — аккаунт не удалён.", "error")
+        return redirect(url_for("profile", tab="settings"))
+    userdb.delete_user(g.user["id"])
+    session.clear()
+    flash("Аккаунт удалён. Будем скучать 💜", "info")
+    return redirect(url_for("index"))
+
+
+@app.errorhandler(413)
+def too_large(_):
+    flash("Файл слишком большой (максимум 2 МБ).", "error")
+    return redirect(url_for("profile", tab="settings") if g.get("user") else url_for("index"))
+
+
+@app.errorhandler(404)
+def not_found(_):
+    return render_template("404.html"), 404
+
 
 @app.route("/places")
 def places():
@@ -691,6 +1109,45 @@ def fitness():
                            result_count=len(items))
 
 
+def _public_base():
+    """Адрес сайта, который «зашивается» в APK (домен, с которого его скачали)."""
+    env = os.getenv("LIVO_PUBLIC_URL", "").strip()
+    if env:
+        return env
+    base = request.url_root.rstrip("/")
+    host = request.host.split(":")[0]
+    local = host in ("localhost", "127.0.0.1") or re.fullmatch(r"\d+\.\d+\.\d+\.\d+", host)
+    if base.startswith("http://") and not local:
+        base = "https://" + base[len("http://"):]
+    return base
+
+
+@app.route("/app")
+def app_page():
+    return render_template("app.html")
+
+
+@app.get("/livo.apk")
+def download_apk():
+    static_apk = os.path.join(app.root_path, "static", "LIVO.apk")
+    if os.path.isfile(static_apk):
+        resp = send_file(static_apk, mimetype="application/vnd.android.package-archive",
+                         as_attachment=True, download_name="LIVO.apk")
+        resp.headers["Cache-Control"] = "no-cache"
+        return resp
+    try:
+        import livo_apk
+        data = livo_apk.build_apk(_public_base())
+    except Exception:
+        app.logger.exception("APK build failed")
+        abort(503)
+    resp = Response(data, mimetype="application/vnd.android.package-archive")
+    resp.headers["Content-Disposition"] = 'attachment; filename="LIVO.apk"'
+    resp.headers["Content-Length"] = str(len(data))
+    resp.headers["Cache-Control"] = "no-cache"
+    return resp
+
+
 @app.route("/about")
 def about():
     return render_template("about.html")
@@ -734,4 +1191,4 @@ def recipes():
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    app.run(host="127.0.0.1", port=5000, debug=os.getenv("FLASK_DEBUG") == "1")

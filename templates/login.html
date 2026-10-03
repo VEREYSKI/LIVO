@@ -1,17 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Вход — LIVO{% endblock %}
 {% block content %}
-<section class="auth-page">
-  <div class="auth-card">
-    <div class="badge">LIVO • ВХОД</div>
-    <h1>С возвращением</h1>
-    <p class="muted">Войдите бесплатно, чтобы продолжить работу с LIVO.</p>
-    <form method="post" class="auth-form">
-      <label>Email<input type="email" name="email" autocomplete="email" required placeholder="you@example.com"></label>
-      <label>Пароль<input type="password" name="password" autocomplete="current-password" required></label>
-      <button class="primary-button" type="submit">Войти</button>
-    </form>
-    <p class="auth-switch">Нет аккаунта? <a href="{{ url_for('register') }}">Создать бесплатно</a></p>
-  </div>
-</section>
+<div class="auth-wrap"><div class="auth-card">
+  <h1>С возвращением 👋</h1><p>Войди, чтобы сохранять избранное и историю.</p>
+  <form class="form" method="post" data-busy novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if error %}<div class="alert-box" role="alert">{{ error }}</div>{% endif %}
+    <label>Email или имя пользователя<input name="login" value="{{ ident }}" autocomplete="username" required autofocus></label>
+    <label>Пароль<span class="pw-field"><input name="password" type="password" autocomplete="current-password" required><button type="button" class="pw-toggle" aria-label="Показать пароль">👁️</button></span></label>
+    <button type="submit">Войти</button>
+  </form>
+  <p class="auth-alt">Нет аккаунта? <a href="{{ url_for('register', next=request.args.get('next')) }}">Зарегистрироваться</a></p>
+</div></div>
 {% endblock %}

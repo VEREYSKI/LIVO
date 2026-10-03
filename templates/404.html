@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block title %}Не найдено — LIVO{% endblock %}
+{% block content %}
+<div class="empty-state" style="margin-top:40px"><span class="big">🛰️</span><h1 style="font-size:40px">404</h1><p>Такой страницы нет.</p><a class="btn" href="{{ url_for('index') }}">На главную</a></div>
+{% endblock %}

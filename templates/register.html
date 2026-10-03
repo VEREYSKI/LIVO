@@ -1,21 +1,17 @@
 {% extends "base.html" %}
 {% block title %}Регистрация — LIVO{% endblock %}
 {% block content %}
-<section class="auth-page">
-  <div class="auth-card">
-    <div class="badge">LIVO • БЕСПЛАТНО</div>
-    <h1>Создать аккаунт</h1>
-    <p class="muted">Регистрация бесплатна. Аккаунт нужен, чтобы сохранять профиль и будущий прогресс LIVO.</p>
-    <form method="post" class="auth-form" novalidate>
-      <label>Имя<input name="name" maxlength="60" autocomplete="name" required placeholder="Ваше имя"></label>
-      <label>Email<input type="email" name="email" autocomplete="email" required placeholder="you@example.com"></label>
-      <label>Возраст<input type="number" name="age" min="16" max="120" required placeholder="16"></label>
-      <label>Пароль<input type="password" name="password" minlength="8" autocomplete="new-password" required placeholder="Минимум 8 символов"></label>
-      <label>Повторите пароль<input type="password" name="password2" minlength="8" autocomplete="new-password" required></label>
-      <label class="check-option"><input type="checkbox" name="privacy" required> Я согласен с <a href="{{ url_for('privacy') }}">политикой конфиденциальности</a>.</label>
-      <button class="primary-button" type="submit">Создать бесплатный аккаунт</button>
-    </form>
-    <p class="auth-switch">Уже есть аккаунт? <a href="{{ url_for('login') }}">Войти</a></p>
-  </div>
-</section>
+{% macro err(k) %}{% if errors.get(k) %}<span class="err">{{ errors[k] }}</span>{% endif %}{% endmacro %}
+<div class="auth-wrap"><div class="auth-card">
+  <h1>Создай аккаунт ✨</h1><p>Избранное, история просмотров и свой профиль.</p>
+  <form class="form" method="post" data-busy novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Имя пользователя<input name="username" value="{{ form.get('username','') }}" autocomplete="username" minlength="3" maxlength="24" required class="{{ 'invalid' if errors.get('username') }}">{{ err('username') }}</label>
+    <label>Email<input name="email" type="email" value="{{ form.get('email','') }}" autocomplete="email" required class="{{ 'invalid' if errors.get('email') }}">{{ err('email') }}</label>
+    <label>Пароль<span class="pw-field"><input name="password" type="password" autocomplete="new-password" minlength="8" required class="{{ 'invalid' if errors.get('password') }}"><button type="button" class="pw-toggle" aria-label="Показать пароль">👁️</button></span><span class="hint">Минимум 8 символов</span>{{ err('password') }}</label>
+    <label>Повтори пароль<input name="password2" type="password" autocomplete="new-password" required class="{{ 'invalid' if errors.get('password2') }}">{{ err('password2') }}</label>
+    <button type="submit">Создать аккаунт</button>
+  </form>
+  <p class="auth-alt">Уже есть аккаунт? <a href="{{ url_for('login', next=request.args.get('next')) }}">Войти</a></p>
+</div></div>
 {% endblock %}

@@ -1,23 +1,66 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-theme="{{ user.theme if user and user.theme != 'auto' else '' }}">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="theme-color" content="#050509">
   <title>{% block title %}LIVO{% endblock %}</title>
+  <script>
+    (function(){var r=document.documentElement,t=r.dataset.theme;
+      if(!t){try{t=localStorage.getItem('livo-theme')}catch(e){}}
+      if(t!=='light'&&t!=='dark'){t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}
+      r.dataset.theme=t;})();
+  </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
+{% set ep = request.endpoint %}
+{% set nav = [('movies','🎬','Фильмы'),('games','🎮','Игры'),('fitness','🏋️','Фитнес'),('challenges','🔥','Челленджи'),('pc_builder','🖥️','ПК'),('recipes','🍳','Рецепты')] %}
+<body data-auth="{{ 1 if user else 0 }}">
 <header class="header">
   <a class="logo" href="{{ url_for('index') }}">LIVO</a>
-  <nav>
-    <a href="{{ url_for('movies') }}">🎬 Фильмы</a>
-    <a href="{{ url_for('games') }}">🎮 Игры</a>
-    <a href="{{ url_for('fitness') }}">🏋️ Фитнес</a>
-    <a href="{{ url_for('challenges') }}">🔥 Челленджи</a>
-    <a href="{{ url_for('pc_builder') }}">🖥️ ПК</a>
-    <a href="{{ url_for('recipes') }}">🍳 Рецепты</a>
+  <nav aria-label="Основное меню">
+    {% for e,i,t in nav %}<a href="{{ url_for(e) }}" class="{{ 'active' if ep==e or (e=='movies' and ep=='movie_detail') }}">{{ i }} {{ t }}</a>{% endfor %}
+    {% if not in_app %}<a href="{{ url_for('app_page') }}" class="{{ 'active' if ep=='app_page' }}">📲 Приложение</a>{% endif %}
   </nav>
+  <div class="header-actions">
+    <label class="lang-switch" title="Язык интерфейса"><span aria-hidden="true">🌐</span><select data-language aria-label="Язык интерфейса"><option value="ru">Русский</option><option value="en">English</option><option value="de">Deutsch</option><option value="fr">Français</option><option value="es">Español</option><option value="it">Italiano</option><option value="uk">Українська</option><option value="pl">Polski</option><option value="nl">Nederlands</option></select></label>
+    <button class="icon-btn" data-theme-toggle type="button" aria-label="Сменить тему"><span class="theme-icon-moon">🌙</span><span class="theme-icon-sun">☀️</span></button>
+    {% if user %}
+    <details class="user-menu">
+      <summary aria-label="Меню профиля">{% if user.has_avatar %}<img class="avatar" src="{{ url_for('avatar', uid=user.id) }}?v={{ user.avatar_v }}" alt="">{% else %}<span class="avatar avatar-ph">{{ user.display_name|initial }}</span>{% endif %}</summary>
+      <div class="menu-pop">
+        <div class="who"><b>{{ user.display_name }}</b><span>@{{ user.username }}</span></div>
+        <a href="{{ url_for('profile') }}">👤 Профиль</a>
+        <a href="{{ url_for('profile', tab='favorites') }}">❤️ Избранное</a>
+        <a href="{{ url_for('profile', tab='history') }}">🕘 История</a>
+        <a href="{{ url_for('profile', tab='settings') }}">⚙️ Настройки</a>
+        <form method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">🚪 Выйти</button></form>
+      </div>
+    </details>
+    {% else %}
+    <a class="btn btn-sm btn-ghost hide-sm" href="{{ url_for('login') }}">Войти</a>
+    <a class="btn btn-sm hide-md" href="{{ url_for('register') }}">Регистрация</a>
+    {% endif %}
+    <button class="icon-btn burger" data-menu-open type="button" aria-label="Открыть меню">☰</button>
+  </div>
 </header>
+
+<div class="drawer-overlay" data-menu-close></div>
+<aside class="drawer" aria-label="Меню">
+  <div class="drawer-top"><div class="lang-switch drawer-lang"><span aria-hidden="true">🌐</span><select data-language aria-label="Язык интерфейса"><option value="ru">Русский</option><option value="en">English</option><option value="de">Deutsch</option><option value="fr">Français</option><option value="es">Español</option><option value="it">Italiano</option><option value="uk">Українська</option><option value="pl">Polski</option><option value="nl">Nederlands</option></select></div><a class="logo" href="{{ url_for('index') }}" style="padding:0">LIVO</a><button class="icon-btn" data-menu-close type="button" aria-label="Закрыть">✕</button></div>
+  {% for e,i,t in nav %}<a href="{{ url_for(e) }}" class="{{ 'active' if ep==e }}">{{ i }} {{ t }}</a>{% endfor %}
+  <a href="{{ url_for('bored') }}">🎲 Мне скучно</a>
+  {% if not in_app %}<a href="{{ url_for('app_page') }}" class="{{ 'active' if ep=='app_page' }}">📲 Приложение</a>{% endif %}
+  <hr>
+  {% if user %}
+    <a href="{{ url_for('profile') }}">👤 Профиль</a>
+    <form method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="link" type="submit">🚪 Выйти</button></form>
+  {% else %}
+    <a href="{{ url_for('login') }}">🔑 Войти</a>
+    <a href="{{ url_for('register') }}">✨ Регистрация</a>
+  {% endif %}
+</aside>
 
 <main class="container">
   {% block content %}{% endblock %}
@@ -28,6 +71,18 @@
   <a href="{{ url_for('privacy') }}">🔒 Конфиденциальность</a>
   <a href="{{ url_for('policy') }}">📜 Политика</a>
   <a href="{{ url_for('social') }}">📱 Социальные сети</a>
+  {% if not in_app %}<a href="{{ url_for('app_page') }}" class="{{ 'active' if ep=='app_page' }}">📲 Приложение</a>{% endif %}
 </footer>
+
+<nav class="bottom-nav" aria-label="Быстрая навигация">
+  <a href="{{ url_for('index') }}" class="{{ 'active' if ep=='index' }}"><span>🏠</span>Главная</a>
+  <a href="{{ url_for('movies') }}" class="{{ 'active' if ep in ('movies','movie_detail') }}"><span>🎬</span>Фильмы</a>
+  <a href="{{ url_for('games') }}" class="{{ 'active' if ep=='games' }}"><span>🎮</span>Игры</a>
+  <a href="{{ url_for('profile') if user else url_for('login') }}" class="{{ 'active' if ep in ('profile','login','register') }}"><span>{{ '❤️' if user else '👤' }}</span>{{ 'Профиль' if user else 'Войти' }}</a>
+  <button type="button" data-menu-open style="border:0;background:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;cursor:pointer"><span style="font-size:20px;line-height:1">☰</span>Ещё</button>
+</nav>
+
+<script>window.__FLASH={{ get_flashed_messages(with_categories=true)|tojson }};</script>
+<script src="{{ url_for('static', filename='app.js') }}" defer></script>
 </body>
 </html>

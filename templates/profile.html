@@ -1,22 +1,116 @@
 {% extends "base.html" %}
 {% block title %}Профиль — LIVO{% endblock %}
+{% macro avatar(size='') %}{% if user.has_avatar %}<img class="avatar {{ size }}" src="{{ url_for('avatar', uid=user.id) }}?v={{ user.avatar_v }}" alt="Аватар">{% else %}<span class="avatar avatar-ph {{ size }}">{{ user.display_name|initial }}</span>{% endif %}{% endmacro %}
 {% block content %}
-<section class="profile-page">
-  <div class="profile-card">
-    <div class="profile-avatar">{{ user['name'][0]|upper }}</div>
-    <div>
-      <div class="badge">LIVO • ПРОФИЛЬ</div>
-      <h1>{{ user['name'] }}</h1>
-      <p class="muted">{{ user['email'] }}</p>
+<section class="profile-head">
+  {{ avatar('avatar-lg') }}
+  <div>
+    <h1>{{ user.display_name }}</h1>
+    <div class="handle">@{{ user.username }}</div>
+    {% if user.bio %}<p class="bio">{{ user.bio }}</p>{% endif %}
+    <div class="stats">
+      <div class="stat"><b>{{ fav_movies|length + fav_games|length }}</b>в избранном</div>
+      <div class="stat"><b>{{ history|length }}</b>просмотрено</div>
+      <div class="stat"><b>{{ user.created_at|datefmt|truncate(10,True,'') }}</b>с нами с</div>
     </div>
   </div>
-  <div class="profile-grid">
-    <div class="card"><b>🎂 Возраст</b><span>{{ user['age'] }}</span></div>
-    <div class="card"><b>✨ Статус</b><span>Бесплатный аккаунт</span></div>
-  </div>
-  <div class="profile-actions">
-    <a class="button" href="{{ url_for('index') }}">← На главную</a>
-    <a class="button secondary" href="{{ url_for('logout') }}">Выйти</a>
-  </div>
 </section>
+
+<div class="tabs" role="tablist">
+  <a href="{{ url_for('profile', tab='favorites') }}" class="{{ 'active' if tab=='favorites' }}">❤️ Избранное</a>
+  <a href="{{ url_for('profile', tab='history') }}" class="{{ 'active' if tab=='history' }}">🕘 История</a>
+  <a href="{{ url_for('profile', tab='settings') }}" class="{{ 'active' if tab=='settings' }}">⚙️ Настройки</a>
+</div>
+
+{% if tab == 'favorites' %}
+<div class="panel">
+  <div class="section-title"><h2>🎬 Фильмы</h2><a href="{{ url_for('movies') }}">В каталог →</a></div>
+  {% if fav_movies %}<div class="grid poster-grid">
+    {% for m in fav_movies %}
+    <div class="card poster-card reveal" data-removable>
+      <button class="fav-btn on" data-fav="{{ m.id }}" data-kind="movie" aria-pressed="true" aria-label="Убрать из избранного"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.3 2.8 4.5 6.4 4.5c2 0 3.7 1.1 5.6 3.2 1.9-2.1 3.6-3.2 5.6-3.2 3.6 0 5.5 3.8 4 7.3C19.5 16.4 12 21 12 21z"/></svg></button>
+      <a class="card-main" href="{{ url_for('movie_detail', movie_id=m.id) }}"><div class="poster-ph" style="--h:{{ m.title|hue }}"><span class="ph-emoji">🎬</span><span class="ph-year">{{ m.year }}</span></div><b>{{ m.title }}</b><span>{{ m.genre }}</span></a>
+    </div>{% endfor %}
+  </div>{% else %}<div class="empty-state"><span class="big">🎬</span><h3>Пока пусто</h3><p>Нажми на сердечко у фильма — и он появится здесь.</p><a class="btn btn-sm" href="{{ url_for('movies') }}">Открыть каталог</a></div>{% endif %}
+
+  <div class="section-title"><h2>🎮 Игры</h2><a href="{{ url_for('games') }}">В каталог →</a></div>
+  {% if fav_games %}<div class="grid poster-grid">
+    {% for x in fav_games %}
+    <div class="card poster-card game-card reveal" data-removable>
+      <button class="fav-btn on" data-fav="{{ x.id }}" data-kind="game" aria-pressed="true" aria-label="Убрать из избранного"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.3 2.8 4.5 6.4 4.5c2 0 3.7 1.1 5.6 3.2 1.9-2.1 3.6-3.2 5.6-3.2 3.6 0 5.5 3.8 4 7.3C19.5 16.4 12 21 12 21z"/></svg></button>
+      <div class="card-main"><div class="poster-ph" style="--h:{{ x.title|hue }}"><span class="ph-emoji">🎮</span><span class="ph-year">{{ x.year }}</span></div><b>{{ x.title }}</b><span>{{ x.genre }}</span><small>{{ x.platform }}</small></div>
+    </div>{% endfor %}
+  </div>{% else %}<div class="empty-state"><span class="big">🎮</span><h3>Пока пусто</h3><p>Добавляй игры в избранное в каталоге.</p><a class="btn btn-sm" href="{{ url_for('games') }}">Открыть каталог</a></div>{% endif %}
+</div>
+
+{% elif tab == 'history' %}
+<div class="panel">
+  <div class="section-title"><h2>История просмотров</h2>
+    {% if history %}<form method="post" action="{{ url_for('history_clear') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-ghost" type="submit">Очистить</button></form>{% endif %}</div>
+  {% if history %}<div class="history-list">
+    {% for m, ts in history %}
+    <a class="history-row reveal" href="{{ url_for('movie_detail', movie_id=m.id) }}">
+      <span class="mini" style="--h:{{ m.title|hue }}">🎬</span>
+      <span><b>{{ m.title }}</b><small>{{ m.genre }} · {{ m.year }}</small></span>
+      <span class="when">{{ ts|datefmt }} UTC</span>
+    </a>{% endfor %}
+  </div>{% else %}<div class="empty-state"><span class="big">🕘</span><h3>История пуста</h3><p>Открой страницу любого фильма — она сохранится здесь.</p><a class="btn btn-sm" href="{{ url_for('movies') }}">К фильмам</a></div>{% endif %}
+</div>
+
+{% else %}
+<div class="panel settings-grid">
+  <div class="form">
+    <h3>📸 Аватар</h3>
+    <div class="avatar-edit">
+      {{ avatar('avatar-lg') }}
+      <div class="btns">
+        <form method="post" action="{{ url_for('profile_avatar') }}" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input id="avatarInput" type="file" name="avatar" accept="image/png,image/jpeg,image/webp,image/gif">
+          <label for="avatarInput" class="btn btn-sm btn-purple" style="cursor:pointer">Загрузить фото</label>
+        </form>
+        {% if user.has_avatar %}<form method="post" action="{{ url_for('profile_avatar_delete') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-ghost" type="submit">Удалить</button></form>{% endif %}
+        <span class="hint note">PNG, JPG, WEBP или GIF до 2 МБ</span>
+      </div>
+    </div>
+  </div>
+
+  <form class="form" method="post" action="{{ url_for('profile_settings') }}" data-busy>
+    <h3>👤 Профиль</h3>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Отображаемое имя<input name="display_name" value="{{ user.display_name }}" maxlength="40"></label>
+    <label>Имя пользователя<input name="username" value="{{ user.username }}" minlength="3" maxlength="24" required></label>
+    <label>Email<input name="email" type="email" value="{{ user.email }}" required></label>
+    <label>О себе<textarea name="bio" maxlength="200">{{ user.bio }}</textarea></label>
+    <div><b style="font-size:14px">🌐 Язык интерфейса</b>
+      <select data-language class="language-setting" aria-label="Язык интерфейса" style="margin-top:8px;width:100%">
+        <option value="ru">Русский</option><option value="en">English</option><option value="de">Deutsch</option><option value="fr">Français</option><option value="es">Español</option><option value="it">Italiano</option><option value="uk">Українська</option><option value="pl">Polski</option><option value="nl">Nederlands</option>
+      </select>
+    </div>
+    <div><b style="font-size:14px">🎨 Тема</b>
+      <div class="theme-opts" style="margin-top:8px">
+        {% for v,t in [('auto','🖥️ Авто'),('light','☀️ Светлая'),('dark','🌙 Тёмная')] %}<label><input type="radio" name="theme" value="{{ v }}" {{ 'checked' if user.theme==v }}>{{ t }}</label>{% endfor %}
+      </div></div>
+    <button type="submit">Сохранить</button>
+  </form>
+
+  <form class="form" method="post" action="{{ url_for('profile_password') }}" data-busy>
+    <h3>🔒 Смена пароля</h3>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Текущий пароль<input type="password" name="current_password" autocomplete="current-password" required></label>
+    <label>Новый пароль<input type="password" name="new_password" autocomplete="new-password" minlength="8" required></label>
+    <label>Повтори новый пароль<input type="password" name="new_password2" autocomplete="new-password" required></label>
+    <button type="submit">Изменить пароль</button>
+  </form>
+
+  <form class="form danger-zone" method="post" action="{{ url_for('profile_delete') }}" data-confirm="password">
+    <details class="danger"><summary>Удалить аккаунт</summary>
+      <p class="note">Избранное, история и аватар будут удалены безвозвратно.</p>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Пароль для подтверждения<input type="password" name="password" autocomplete="current-password"></label>
+      <button class="btn btn-danger" type="submit" style="margin-top:12px">Удалить навсегда</button>
+    </details>
+  </form>
+</div>
+{% endif %}
 {% endblock %}

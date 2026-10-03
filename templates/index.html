@@ -6,10 +6,13 @@
   <div class="badge">LIVO • YOUR ENTERTAINMENT HUB</div>
   <h1>LIVO — твой мир<br>развлечений</h1>
   <p>Фильмы, игры, занятия, тренировки и челленджи. <strong>Выбирай. Играй. Живи.</strong></p>
-  <form class="search" action="{{ url_for('movies') }}" method="get">
-    <input name="q" placeholder="🔍  Что ты хочешь найти?">
-    <button type="submit">⌕</button>
-  </form>
+  <div class="search-wrap">
+    <form class="search" action="{{ url_for('movies') }}" method="get" role="search">
+      <input id="heroSearch" name="q" autocomplete="off" placeholder="🔍  Что ты хочешь найти?" aria-label="Поиск фильмов">
+      <button type="submit" aria-label="Искать">⌕</button>
+    </form>
+    <div class="suggest" id="suggest" hidden></div>
+  </div>
 </section>
 <div class="grid">
   <a class="card" href="{{ url_for('movies') }}"><b>🎬 Фильмы и сериалы</b><span>Найди, что посмотреть сегодня</span></a>
@@ -20,20 +23,26 @@
   <a class="card" href="{{ url_for('fitness') }}"><b>🏋️ Фитнес</b><span>Собери свою тренировку</span></a>
 </div>
 <div class="section-title"><h2>🔥 Фильмы 2000–2026</h2><a href="{{ url_for('movies') }}">Весь каталог →</a></div>
-<div class="movie-grid">
+<div class="grid poster-grid">
 {% for movie in movies[:8] %}
-  <div class="card poster"><div class="poster-content"><b>{{ movie.title }}</b><span>{{ movie.year }} · {{ movie.genre }}</span><small class="rating">{{ movie.year }}</small></div></div>
+  <a class="card poster-card reveal" href="{{ url_for('movie_detail', movie_id=movie.id) }}"><div class="poster-ph" data-poster-title="{{ movie.title|e }}" data-poster-kind="movie" style="--h:{{ movie.title|hue }}"><span class="poster-loading">Загрузка…</span><span class="ph-emoji" aria-hidden="true">🎬</span><span class="ph-year">{{ movie.year }}</span></div><b>{{ movie.title }}</b><span>{{ movie.genre }}</span></a>
 {% endfor %}
 </div>
 <div class="section-title"><h2>🎮 Популярные игры</h2><a href="{{ url_for('games') }}">Все игры →</a></div>
-<div class="movie-grid">
-  <div class="card poster"><div class="poster-content"><b>Minecraft</b><span>PC · Console · Mobile</span><small class="rating">★ 9.2</small></div></div>
-  <div class="card poster"><div class="poster-content"><b>GTA V</b><span>PC · PS · Xbox</span><small class="rating">★ 9.4</small></div></div>
-  <div class="card poster"><div class="poster-content"><b>Cyberpunk 2077</b><span>PC · PS · Xbox</span><small class="rating">★ 8.8</small></div></div>
-  <div class="card poster"><div class="poster-content"><b>Elden Ring</b><span>PC · PS · Xbox</span><small class="rating">★ 9.5</small></div></div>
+<div class="grid poster-grid">
+  {% for n,p,r,e in [('Minecraft','PC · Console · Mobile','9.2','⛏️'),('GTA V','PC · PS · Xbox','9.4','🚗'),('Cyberpunk 2077','PC · PS · Xbox','8.8','🌆'),('Elden Ring','PC · PS · Xbox','9.5','⚔️')] %}
+  <div class="card poster-card game-card reveal"><div class="poster-ph" data-poster-title="{{ n|e }}" data-poster-kind="game" style="--h:{{ n|hue }}"><span class="poster-loading">Загрузка…</span><span class="ph-emoji" aria-hidden="true">{{ e }}</span><span class="ph-year">★ {{ r }}</span></div><b>{{ n }}</b><span>{{ p }}</span></div>
+  {% endfor %}
 </div>
+{% if not in_app %}
+<div class="premium-bar app-bar">
+  <img class="app-bar-icon" src="{{ url_for('static', filename='livo_app_icon.png') }}" alt="" width="56" height="56">
+  <div><b>📲 LIVO для Android</b><br><span class="note">Установи приложение — LIVO откроется на весь экран, как обычное приложение.</span></div>
+  <a class="btn btn-purple" href="{{ url_for('download_apk') }}" download="LIVO.apk">Скачать APK</a>
+</div>
+{% endif %}
 <div class="premium-bar">
   <div><b>✨ Открой для себя больше</b><br><span class="note">Подборки, челленджи и идеи для каждого дня.</span></div>
-  <a href="{{ url_for('about') }}"><button>Узнать больше</button></a>
+  <a class="btn" href="{{ url_for('register') if not user else url_for('profile') }}">{{ 'Создать аккаунт' if not user else 'Мой профиль' }}</a>
 </div>
 {% endblock %}

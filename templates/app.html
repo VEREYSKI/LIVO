@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Приложение LIVO для Android — скачать APK{% endblock %}
+{% block content %}
+<div class="app-page">
+  <div class="store-head">
+    <img class="store-icon" src="{{ url_for('static', filename='livo_app_icon.png') }}" alt="LIVO">
+    <div>
+      <h1>Приложение LIVO для Android</h1>
+      <div class="dev">Официальное мобильное приложение сервиса LIVO</div>
+    </div>
+  </div>
+
+  <p class="note app-lead">
+    Предоставляет полный доступ к каталогу фильмов и сериалов, играм, фитнесу, челленджам, конструктору сборки ПК и другим разделам платформы.
+  </p>
+  <p class="note app-lead">
+    Приложение синхронизируется с вашим аккаунтом, поддерживает тёмную и светлую тему оформления и обеспечивает удобный доступ ко всем функциям сервиса с устройства Android.
+  </p>
+  <p class="note app-lead">
+    Для установки скачайте APK-файл и следуйте инструкциям системы.
+  </p>
+
+  {% if in_app %}
+  <p class="note">✅ Вы уже пользуетесь приложением LIVO.</p>
+  {% else %}
+  <div class="store-install">
+    <a class="btn btn-purple" href="{{ url_for('download_apk') }}" download="LIVO.apk">📲 Скачать APK</a>
+    <span class="note">Только для Android · файл LIVO.apk</span>
+  </div>
+  {% endif %}
+
+  <img class="store-cover" src="{{ url_for('static', filename='livo_cover.png') }}" alt="LIVO">
+
+  <div class="section-title"><h2>Инструкция по установке приложения LIVO</h2></div>
+  <ol class="store-steps">
+    <li>Скачайте официальный APK-файл приложения LIVO.</li>
+    <li>На устройстве Android откройте <b>Настройки → Безопасность</b> (или <b>Специальный доступ</b>) и разрешите установку из неизвестных источников / установку приложений из этого источника.</li>
+    <li>Откройте скачанный файл и нажмите <b>Установить</b>.</li>
+    <li>После завершения установки запустите приложение LIVO.</li>
+    <li>Войдите в существующий аккаунт или зарегистрируйте новый — все данные (избранное, история, настройки) синхронизируются с сайтом.</li>
+  </ol>
+  <p class="store-note">Приложение требует подключения к интернету.</p>
+</div>
+{% endblock %}

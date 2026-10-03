@@ -3,31 +3,11 @@
 {% block content %}
 <h1>🎮 Игры</h1>
 <p>Игры разных жанров с 2000 года по настоящее время.</p>
-<div class="search">
-  <input id="gameSearch" placeholder="🔍 Найти игру, жанр или платформу...">
-  <button type="button" onclick="filterGames()">⌕</button>
-</div>
-<div class="grid" style="margin-top:16px">
-  <button type="button" onclick="setGenre('all')">Все жанры</button><button type="button" onclick="setGenre('Action')">Экшен</button><button type="button" onclick="setGenre('RPG')">RPG</button><button type="button" onclick="setGenre('Shooter')">Шутеры</button><button type="button" onclick="setGenre('Horror')">Хорроры</button><button type="button" onclick="setGenre('Racing')">Гонки</button><button type="button" onclick="setGenre('Strategy')">Стратегии</button><button type="button" onclick="setGenre('Sports')">Спорт</button><button type="button" onclick="setGenre('Simulation')">Симуляторы</button><button type="button" onclick="setGenre('Survival')">Выживание</button><button type="button" onclick="setGenre('Co-op')">Кооператив</button>
-</div>
-<div class="grid poster-grid" id="gamesGrid">
-{% for game in games %}
-<div class="card game-card poster-card" data-search="{{ game.title }} {{ game.genre }} {{ game.platform }} {{ game.year }}">
-  {% if game.poster %}<img class="poster-image" src="{{ game.poster }}" alt="Обложка {{ game.title }}" loading="lazy">{% else %}<div class="poster-placeholder">🎮</div>{% endif %}
-  <b>{{ game.title }}</b><span>{{ game.genre }}</span><small>{{ game.year }} · {{ game.platform }}</small>
-</div>
-{% endfor %}
-</div>
-<script>
-let activeGenre='all';
-function setGenre(g){ activeGenre=g; filterGames(); }
-function filterGames(){
-  const q=document.getElementById('gameSearch').value.toLowerCase().trim();
-  document.querySelectorAll('.game-card').forEach(card=>{
-    const text=card.dataset.search.toLowerCase(); const genreOk=activeGenre==='all'||text.includes(activeGenre.toLowerCase());
-    card.style.display=(genreOk && text.includes(q))?'flex':'none';
-  });
-}
-document.getElementById('gameSearch').addEventListener('input',filterGames);
-</script>
+<form class="search" id="searchForm" role="search">
+  <input id="q" type="search" value="{{ q }}" autocomplete="off" placeholder="🔍 Найти игру, жанр или платформу..." aria-label="Поиск игр">
+  <button type="submit" aria-label="Искать">⌕</button>
+</form>
+<div class="chips"><button type="button" class="chip active" data-genre="all">Все жанры</button><button type="button" class="chip" data-genre="Action">Экшен</button><button type="button" class="chip" data-genre="RPG">RPG</button><button type="button" class="chip" data-genre="Shooter">Шутеры</button><button type="button" class="chip" data-genre="Horror">Хорроры</button><button type="button" class="chip" data-genre="Racing">Гонки</button><button type="button" class="chip" data-genre="Strategy">Стратегии</button><button type="button" class="chip" data-genre="Sports">Спорт</button><button type="button" class="chip" data-genre="Simulation">Симуляторы</button><button type="button" class="chip" data-genre="Survival">Выживание</button><button type="button" class="chip" data-genre="Co-op">Кооператив</button></div>
+<div class="section-title"><h2 id="count">{{ total }} игр</h2></div>
+<div data-catalog="game" class="grid poster-grid" id="grid" aria-live="polite"></div>
 {% endblock %}
